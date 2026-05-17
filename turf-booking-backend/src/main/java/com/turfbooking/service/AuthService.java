@@ -48,11 +48,19 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         
         // Trigger simulated email
-        emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
+        try {
+            emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getName());
+        } catch (Exception e) {
+            System.err.println("Failed to send welcome email: " + e.getMessage());
+        }
         
         // Trigger real-time SMS
         if (savedUser.getPhone() != null && !savedUser.getPhone().isEmpty()) {
-            smsService.sendWelcomeSms(savedUser.getPhone(), savedUser.getName());
+            try {
+                smsService.sendWelcomeSms(savedUser.getPhone(), savedUser.getName());
+            } catch (Exception e) {
+                System.err.println("Failed to send welcome SMS: " + e.getMessage());
+            }
         }
         
         UserDetailsImpl userDetails = new UserDetailsImpl(savedUser);
