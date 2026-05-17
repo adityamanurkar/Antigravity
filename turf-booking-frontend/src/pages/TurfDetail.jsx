@@ -5,10 +5,12 @@ import api from '../api/axiosConfig';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, Info, ChevronLeft, ChevronRight, CreditCard, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
+import { useAuthStore } from '../store/authStore';
 
 const TurfDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -290,17 +292,32 @@ const TurfDetail = () => {
                 </div>
               )}
 
-              <button
-                disabled={!selectedSlot || bookingMutation.isPending}
-                onClick={() => setShowPaymentModal(true)}
-                className={`w-full py-4 rounded-2xl text-lg font-black transition-all ${
-                  !selectedSlot 
-                    ? 'bg-white/5 text-offwhite/20 cursor-not-allowed' 
-                    : 'bg-lime text-forest hover:scale-[1.02] active:scale-95 shadow-xl shadow-lime/20'
-                }`}
-              >
-                {bookingMutation.isPending ? 'PROCESSING...' : 'PROCEED TO PAY'}
-              </button>
+              {selectedSlot && !isAuthenticated && (
+                <p className="text-xs text-center text-lime/80 font-bold tracking-tight uppercase flex items-center justify-center gap-1.5 bg-lime/5 py-2.5 rounded-xl border border-lime/10">
+                  <span>🔒</span> Please log in to complete your reservation.
+                </p>
+              )}
+
+              {!isAuthenticated ? (
+                <button
+                  onClick={() => navigate('/login')}
+                  className="w-full py-4 rounded-2xl text-lg font-black bg-lime text-forest hover:scale-[1.02] active:scale-95 shadow-xl shadow-lime/20 transition-all flex items-center justify-center gap-2"
+                >
+                  LOGIN TO BOOK
+                </button>
+              ) : (
+                <button
+                  disabled={!selectedSlot || bookingMutation.isPending}
+                  onClick={() => setShowPaymentModal(true)}
+                  className={`w-full py-4 rounded-2xl text-lg font-black transition-all ${
+                    !selectedSlot 
+                      ? 'bg-white/5 text-offwhite/20 cursor-not-allowed' 
+                      : 'bg-lime text-forest hover:scale-[1.02] active:scale-95 shadow-xl shadow-lime/20'
+                  }`}
+                >
+                  {bookingMutation.isPending ? 'PROCESSING...' : 'PROCEED TO PAY'}
+                </button>
+              )}
               
               <p className="text-[10px] text-center text-offwhite/30 font-bold uppercase tracking-tighter">
                 Secure payment powered by Turfiez Pay
