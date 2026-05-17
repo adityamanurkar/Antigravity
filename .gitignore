@@ -1,0 +1,33 @@
+# Node & Frontend Build outputs
+turf-booking-frontend/node_modules/
+turf-booking-frontend/dist/
+turf-booking-frontend/dist-ssr/
+turf-booking-frontend/*.local
+
+# Java & Backend Build outputs
+turf-booking-backend/target/
+turf-booking-backend/uploads/
+turf-booking-backend/.settings/
+turf-booking-backend/.classpath
+turf-booking-backend/.project
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment & Logs
+*.log
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
