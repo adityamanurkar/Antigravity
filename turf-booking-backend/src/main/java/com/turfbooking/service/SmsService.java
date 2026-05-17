@@ -43,7 +43,7 @@ public class SmsService {
             }
 
             String body = String.format(
-                "Hi %s, your booking at %s on %s at %s is CONFIRMED! Ref: #%s. Enjoy your match! - TurfMate",
+                "Hi %s, your booking at %s on %s at %s is CONFIRMED! Ref: #%s. Enjoy your match! - Turfiez",
                 userName, turfName, date, time, ref
             );
 
@@ -65,11 +65,11 @@ public class SmsService {
             String formattedPhone = toPhone.startsWith("+") ? toPhone : "+91" + toPhone;
 
             if ("AC_DEFAULT".equals(accountSid)) {
-                log.info("📱 SIMULATED WELCOME SMS TO {}: Welcome to TurfMate, {}! Ready for your first match?", formattedPhone, userName);
+                log.info("📱 SIMULATED WELCOME SMS TO {}: Welcome to Turfiez, {}! Ready for your first match?", formattedPhone, userName);
                 return;
             }
 
-            String body = String.format("Welcome to TurfMate, %s! You're now part of the squad. Book your next match at http://localhost:5173", userName);
+            String body = String.format("Welcome to Turfiez, %s! You're now part of the squad. Book your next match at http://localhost:5173", userName);
 
             Message.creator(
                 new PhoneNumber(formattedPhone),

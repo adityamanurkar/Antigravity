@@ -303,7 +303,7 @@ const TurfDetail = () => {
               </button>
               
               <p className="text-[10px] text-center text-offwhite/30 font-bold uppercase tracking-tighter">
-                Secure payment powered by TurfMate Pay
+                Secure payment powered by Turfiez Pay
               </p>
             </div>
           </div>

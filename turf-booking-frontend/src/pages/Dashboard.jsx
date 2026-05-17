@@ -258,7 +258,7 @@ const Dashboard = () => {
                   <div className="w-12 h-12 bg-lime rounded-xl flex items-center justify-center mx-auto mb-4">
                     <span className="text-forest font-black text-xl">T</span>
                   </div>
-                  <h3 className="text-offwhite font-black text-xl tracking-tighter">TURFMATE DIGITAL PASS</h3>
+                  <h3 className="text-offwhite font-black text-xl tracking-tighter">TURFIEZ DIGITAL PASS</h3>
                   <p className="text-lime text-[10px] font-black tracking-[0.2em] mt-1">VERIFIED BOOKING</p>
                </div>
 

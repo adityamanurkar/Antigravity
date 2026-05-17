@@ -35,7 +35,7 @@ public class EmailService {
                 "<p>🆔 <strong>Ref:</strong> #%s</p>" +
                 "</div>" +
                 "<p style='margin-top: 20px;'>See you on the field!</p>" +
-                "<p style='color: #888;'>Team TurfMate</p>" +
+                "<p style='color: #888;'>Team Turfiez</p>" +
                 "</div>",
                 userName, turfName, date, time, ref
             );
@@ -55,11 +55,11 @@ public class EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
             
             helper.setTo(toEmail);
-            helper.setSubject("Welcome to the Squad! 🏟️ TurfMate");
+            helper.setSubject("Welcome to the Squad! 🏟️ Turfiez");
             
             String htmlContent = String.format(
                 "<div style='font-family: Arial, sans-serif; padding: 20px; text-align: center;'>" +
-                "<h1 style='color: #C5F135; background: #032b21; padding: 20px; border-radius: 10px;'>TURFMATE</h1>" +
+                "<h1 style='color: #C5F135; background: #032b21; padding: 20px; border-radius: 10px;'>TURFIEZ</h1>" +
                 "<h2>Welcome to the team, %s!</h2>" +
                 "<p>You are now part of the world's premier turf booking community.</p>" +
                 "<p>Ready for your first match?</p>" +

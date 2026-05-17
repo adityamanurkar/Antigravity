@@ -30,7 +30,7 @@ const Navbar = () => {
                 <span className="text-forest font-archivo text-xl font-black">T</span>
               </div>
               <span className="font-archivo text-2xl tracking-tighter text-offwhite">
-                TURF<span className="text-lime">MATE</span>
+                TURF<span className="text-lime">IEZ</span>
               </span>
             </Link>
           </div>
