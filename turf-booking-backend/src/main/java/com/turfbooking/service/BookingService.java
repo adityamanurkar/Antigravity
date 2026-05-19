@@ -16,6 +16,8 @@ import com.turfbooking.repository.BookingRepository;
 import com.turfbooking.repository.TimeSlotRepository;
 import com.turfbooking.repository.TurfRepository;
 import com.turfbooking.repository.UserRepository;
+import com.turfbooking.repository.PaymentRepository;
+import com.turfbooking.entity.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +34,7 @@ public class BookingService {
     private final TimeSlotRepository timeSlotRepository;
     private final TurfRepository turfRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
     private final EmailService emailService;
     private final SmsService smsService;
 
@@ -56,6 +59,8 @@ public class BookingService {
         slot.setStatus(SlotStatus.BOOKED);
         timeSlotRepository.save(slot);
 
+        boolean isPaid = request.getTransactionId() != null && !request.getTransactionId().trim().isEmpty();
+
         Booking booking = Booking.builder()
                 .user(user)
                 .turf(turf)
@@ -63,37 +68,49 @@ public class BookingService {
                 .numberOfPlayers(request.getNumberOfPlayers())
                 .totalPrice(turf.getPricePerHour()) // Assuming price is per slot for simplicity
                 .status(BookingStatus.CONFIRMED)
-                .paymentStatus(PaymentStatus.PENDING)
+                .paymentStatus(isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING)
                 .bookingRef(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .build();
 
-        // Award loyalty points (Null-safe)
-        int currentPoints = user.getLoyaltyPoints() != null ? user.getLoyaltyPoints() : 0;
-        user.setLoyaltyPoints(currentPoints + 100);
-        userRepository.save(user);
-
         Booking savedBooking = bookingRepository.save(booking);
-        
-        // Trigger simulated email
-        emailService.sendBookingConfirmation(
-            user.getEmail(), 
-            user.getName(), 
-            turf.getName(), 
-            slot.getSlotDate().toString(), 
-            slot.getStartTime().toString(), 
-            savedBooking.getBookingRef()
-        );
 
-        // Trigger real-time SMS
-        if (user.getPhone() != null && !user.getPhone().isEmpty()) {
-            smsService.sendBookingSms(
-                user.getPhone(), 
+        // Save a Payment record to database
+        Payment payment = Payment.builder()
+                .booking(savedBooking)
+                .amount(savedBooking.getTotalPrice())
+                .paymentMethod("UPI")
+                .transactionId(isPaid ? request.getTransactionId().trim() : "PENDING_" + savedBooking.getBookingRef())
+                .status(isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING)
+                .build();
+        paymentRepository.save(payment);
+
+        if (isPaid) {
+            // Award loyalty points (Null-safe)
+            int currentPoints = user.getLoyaltyPoints() != null ? user.getLoyaltyPoints() : 0;
+            user.setLoyaltyPoints(currentPoints + 100);
+            userRepository.save(user);
+
+            // Trigger simulated email
+            emailService.sendBookingConfirmation(
+                user.getEmail(), 
                 user.getName(), 
                 turf.getName(), 
                 slot.getSlotDate().toString(), 
                 slot.getStartTime().toString(), 
                 savedBooking.getBookingRef()
             );
+
+            // Trigger real-time SMS
+            if (user.getPhone() != null && !user.getPhone().isEmpty()) {
+                smsService.sendBookingSms(
+                    user.getPhone(), 
+                    user.getName(), 
+                    turf.getName(), 
+                    slot.getSlotDate().toString(), 
+                    slot.getStartTime().toString(), 
+                    savedBooking.getBookingRef()
+                );
+            }
         }
 
         return mapToDto(savedBooking);

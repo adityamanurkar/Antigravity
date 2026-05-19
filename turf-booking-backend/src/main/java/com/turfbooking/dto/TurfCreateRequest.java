@@ -26,5 +26,6 @@ public class TurfCreateRequest {
     private List<String> amenities;
     private LocalTime openingTime;
     private LocalTime closingTime;
+    private String upiId;
     private List<String> imageUrls;
 }

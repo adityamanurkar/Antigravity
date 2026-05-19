@@ -13,4 +13,5 @@ public class BookingRequest {
     private Long turfId;
     private Long slotId;
     private Integer numberOfPlayers;
+    private String transactionId;
 }

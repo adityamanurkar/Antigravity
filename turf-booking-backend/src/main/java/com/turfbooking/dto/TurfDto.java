@@ -30,5 +30,6 @@ public class TurfDto {
     private LocalTime openingTime;
     private LocalTime closingTime;
     private TurfStatus status;
+    private String upiId;
     private List<String> images;
 }

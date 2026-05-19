@@ -69,6 +69,9 @@ public class Turf {
     @Builder.Default
     private TurfStatus status = TurfStatus.PENDING;
 
+    @Column(name = "upi_id")
+    private String upiId;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

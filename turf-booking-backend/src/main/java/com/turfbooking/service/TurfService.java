@@ -56,6 +56,7 @@ public class TurfService {
                 .amenities(request.getAmenities())
                 .openingTime(request.getOpeningTime())
                 .closingTime(request.getClosingTime())
+                .upiId(request.getUpiId())
                 .status(TurfStatus.APPROVED)
                 .build();
 
@@ -103,6 +104,7 @@ public class TurfService {
                 .openingTime(turf.getOpeningTime())
                 .closingTime(turf.getClosingTime())
                 .status(turf.getStatus())
+                .upiId(turf.getUpiId())
                 .images(images)
                 .build();
     }

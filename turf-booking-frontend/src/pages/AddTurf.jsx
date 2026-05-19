@@ -19,6 +19,7 @@ const AddTurf = () => {
     amenities: [],
     openingTime: '06:00',
     closingTime: '23:00',
+    upiId: '',
     imageUrls: []
   });
 
@@ -136,6 +137,21 @@ const AddTurf = () => {
             <div className="space-y-2">
               <label className="text-sm font-bold text-offwhite/80">Surface Type</label>
               <input required type="text" name="surfaceType" value={formData.surfaceType} onChange={handleChange} className="input-field w-full" placeholder="e.g. Artificial Grass" />
+            </div>
+            
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-sm font-bold text-offwhite/80">UPI ID for Direct Payouts (Optional)</label>
+              <input 
+                type="text" 
+                name="upiId" 
+                value={formData.upiId} 
+                onChange={handleChange} 
+                className="input-field w-full" 
+                placeholder="e.g. ownername@okaxis or 9876543210@paytm" 
+              />
+              <p className="text-[10px] text-offwhite/40 font-bold uppercase tracking-tight">
+                💡 Players will scan this UPI ID to pay you directly. If left blank, it will automatically fall back to Turfiez Platform UPI.
+              </p>
             </div>
             <div className="md:col-span-2 space-y-4">
               <label className="text-sm font-bold text-offwhite/80">Supported Sports</label>
