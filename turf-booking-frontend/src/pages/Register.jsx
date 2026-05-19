@@ -32,8 +32,10 @@ const Register = () => {
       login(response.data.user, response.data.token);
       navigate('/dashboard');
     } catch (err) {
-      if (err.response?.data && typeof err.response.data === 'object') {
-        const errorMsg = Object.values(err.response.data).join(', ') || 'Registration failed';
+      if (!err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network Error')) {
+        setError('Server is waking up — please wait 30 seconds and try again!');
+      } else if (err.response?.data && typeof err.response.data === 'object') {
+        const errorMsg = err.response.data.message || Object.values(err.response.data).join(', ') || 'Registration failed';
         setError(errorMsg);
       } else {
         setError('Failed to register. Please try again.');

@@ -23,7 +23,11 @@ const Login = () => {
       login(response.data.user, response.data.token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to login. Please check your credentials.');
+      if (!err.response || err.code === 'ECONNABORTED' || err.message?.includes('Network Error')) {
+        setError('Server is waking up — please wait 30 seconds and try again!');
+      } else {
+        setError(err.response?.data?.message || err.response?.data?.error || 'Failed to login. Please check your credentials.');
+      }
     } finally {
       setIsLoading(false);
     }
