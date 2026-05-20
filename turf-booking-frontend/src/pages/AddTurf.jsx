@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl } from '../utils/imageUtils';
-import { ArrowLeft, MapPin, Clock, DollarSign, Image as ImageIcon, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AddTurf = () => {

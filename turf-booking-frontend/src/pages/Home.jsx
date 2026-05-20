@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Calendar, MapPin, Zap, Star } from 'lucide-react';
+import { ArrowRight, Calendar, MapPin, Zap } from 'lucide-react';
 
 const Home = () => {
   return (

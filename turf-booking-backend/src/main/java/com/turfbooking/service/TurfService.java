@@ -57,7 +57,7 @@ public class TurfService {
                 .openingTime(request.getOpeningTime())
                 .closingTime(request.getClosingTime())
                 .upiId(request.getUpiId())
-                .status(TurfStatus.APPROVED)
+                .status(TurfStatus.PENDING)
                 .build();
 
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {

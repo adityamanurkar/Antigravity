@@ -2,11 +2,13 @@ package com.turfbooking.controller;
 
 import com.turfbooking.dto.TimeSlotDto;
 import com.turfbooking.dto.TimeSlotGenerateRequest;
+import com.turfbooking.security.UserDetailsImpl;
 import com.turfbooking.service.TimeSlotService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -30,19 +32,24 @@ public class TimeSlotController {
     @PostMapping("/turfs/{turfId}/slots/generate")
     public ResponseEntity<List<TimeSlotDto>> generateSlots(
             @PathVariable Long turfId,
-            @RequestBody TimeSlotGenerateRequest request) {
-        return ResponseEntity.ok(timeSlotService.generateSlots(turfId, request));
+            @RequestBody TimeSlotGenerateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(timeSlotService.generateSlots(turfId, request, userDetails.getId()));
     }
 
     @PreAuthorize("hasRole('OWNER')")
     @PutMapping("/slots/{id}/block")
-    public ResponseEntity<TimeSlotDto> blockSlot(@PathVariable Long id) {
-        return ResponseEntity.ok(timeSlotService.blockSlot(id));
+    public ResponseEntity<TimeSlotDto> blockSlot(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(timeSlotService.blockSlot(id, userDetails.getId()));
     }
 
     @PreAuthorize("hasRole('OWNER')")
     @PutMapping("/slots/{id}/unblock")
-    public ResponseEntity<TimeSlotDto> unblockSlot(@PathVariable Long id) {
-        return ResponseEntity.ok(timeSlotService.unblockSlot(id));
+    public ResponseEntity<TimeSlotDto> unblockSlot(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(timeSlotService.unblockSlot(id, userDetails.getId()));
     }
 }

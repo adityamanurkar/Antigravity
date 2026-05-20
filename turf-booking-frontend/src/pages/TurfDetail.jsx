@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, Info, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { useAuthStore } from '../store/authStore';
 

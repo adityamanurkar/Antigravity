@@ -14,10 +14,10 @@ const Dashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   // Sync profile for latest loyalty points
-  const { data: profile } = useQuery({
+  useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const response = await api.get('/auth/me'); // I'll need to create this endpoint if missing, or use an existing one
+      const response = await api.get('/auth/me');
       if (response.data) setUser(response.data);
       return response.data;
     },
@@ -33,16 +33,7 @@ const Dashboard = () => {
     enabled: user?.role === 'OWNER',
   });
 
-  const { data: myBookings, isLoading: loadingBookings } = useQuery({
-    queryKey: ['myBookings'],
-    queryFn: async () => {
-      const response = await api.get('/bookings/my');
-      return response.data;
-    },
-    enabled: user?.role === 'PLAYER',
-  });
-
-  const { refetch: refetchBookings } = useQuery({
+  const { data: myBookings, isLoading: loadingBookings, refetch: refetchBookings } = useQuery({
     queryKey: ['myBookings'],
     queryFn: async () => {
       const response = await api.get('/bookings/my');

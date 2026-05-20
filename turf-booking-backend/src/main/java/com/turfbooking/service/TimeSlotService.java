@@ -9,6 +9,7 @@ import com.turfbooking.exception.ResourceNotFoundException;
 import com.turfbooking.repository.TimeSlotRepository;
 import com.turfbooking.repository.TurfRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,13 +34,10 @@ public class TimeSlotService {
     }
 
     @Transactional
-    public List<TimeSlotDto> generateSlots(Long turfId, TimeSlotGenerateRequest request) {
+    public List<TimeSlotDto> generateSlots(Long turfId, TimeSlotGenerateRequest request, Long ownerId) {
         Turf turf = turfRepository.findById(turfId)
                 .orElseThrow(() -> new ResourceNotFoundException("Turf not found"));
-
-        System.out.println("Generating slots for turf: " + turf.getName());
-        System.out.println("Range: " + request.getStartDate() + " to " + request.getEndDate());
-        System.out.println("Duration: " + request.getSlotDurationMinutes() + " mins");
+        validateTurfOwner(turf, ownerId);
         
         List<TimeSlot> slots = new ArrayList<>();
         LocalDate currentDate = request.getStartDate();
@@ -53,7 +51,6 @@ public class TimeSlotService {
                     break;
                 }
                 
-                // Check if slot already exists
                 boolean exists = timeSlotRepository.existsByTurfIdAndSlotDateAndStartTime(
                     turf.getId(), currentDate, currentTime
                 );
@@ -78,26 +75,33 @@ public class TimeSlotService {
             currentDate = currentDate.plusDays(1);
         }
 
-        System.out.println("Total slots created: " + slots.size());
         return timeSlotRepository.saveAll(slots).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional
-    public TimeSlotDto blockSlot(Long id) {
+    public TimeSlotDto blockSlot(Long id, Long ownerId) {
         TimeSlot slot = timeSlotRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
+        validateTurfOwner(slot.getTurf(), ownerId);
         slot.setStatus(SlotStatus.BLOCKED);
         return mapToDto(timeSlotRepository.save(slot));
     }
 
     @Transactional
-    public TimeSlotDto unblockSlot(Long id) {
+    public TimeSlotDto unblockSlot(Long id, Long ownerId) {
         TimeSlot slot = timeSlotRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Slot not found"));
+        validateTurfOwner(slot.getTurf(), ownerId);
         slot.setStatus(SlotStatus.AVAILABLE);
         return mapToDto(timeSlotRepository.save(slot));
+    }
+
+    private void validateTurfOwner(Turf turf, Long ownerId) {
+        if (!turf.getOwner().getId().equals(ownerId)) {
+            throw new AccessDeniedException("You are not allowed to manage this turf");
+        }
     }
 
     private TimeSlotDto mapToDto(TimeSlot slot) {

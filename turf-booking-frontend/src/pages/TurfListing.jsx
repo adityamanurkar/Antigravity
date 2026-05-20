@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Search, MapPin, Star, Filter, ArrowRight, Crosshair, Radar } from 'lucide-react';
+import { Search, MapPin, Star, ArrowRight, Radar } from 'lucide-react';
 import api from '../api/axiosConfig';
 import { getImageUrl } from '../utils/imageUtils';
 
@@ -31,7 +30,7 @@ const TurfListing = () => {
   const handleRadarScan = () => {
     setIsRadarScanning(true);
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition((position) => {
+      navigator.geolocation.getCurrentPosition(() => {
         // In a real app, we'd send lat/long to backend
         // For now, we simulate finding the user's city
         setTimeout(() => {

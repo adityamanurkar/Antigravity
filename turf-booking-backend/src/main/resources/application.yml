@@ -43,3 +43,8 @@ twilio:
   account-sid: ${TWILIO_ACCOUNT_SID:your-twilio-sid}
   auth-token: ${TWILIO_AUTH_TOKEN:your-twilio-auth-token}
   phone-number: ${TWILIO_PHONE_NUMBER:your-twilio-phone-number}
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:your-cloud-name}
+  api-key: ${CLOUDINARY_API_KEY:your-api-key}
+  api-secret: ${CLOUDINARY_API_SECRET:your-api-secret}
