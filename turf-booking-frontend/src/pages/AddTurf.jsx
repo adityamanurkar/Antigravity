@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2 } from 'lucide-react';
@@ -8,7 +8,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const AddTurf = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
   const queryClient = useQueryClient();
+  const isEditMode = Boolean(id);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -27,6 +29,30 @@ const AddTurf = () => {
   const availableSports = ['Football', 'Cricket', 'Badminton', 'Tennis', 'Basketball', 'Pickleball'];
   const availableAmenities = ['LED Floodlights', 'Parking', 'Changing Rooms', 'Drinking Water', 'Washrooms', 'First Aid', 'CCTV'];
   const [uploading, setUploading] = useState(false);
+
+  const { isLoading: loadingTurf } = useQuery({
+    queryKey: ['editTurf', id],
+    queryFn: async () => {
+      const response = await api.get(`/turfs/${id}`);
+      const turf = response.data;
+      setFormData({
+        name: turf.name || '',
+        description: turf.description || '',
+        address: turf.address || '',
+        city: turf.city || '',
+        pricePerHour: turf.pricePerHour || '',
+        surfaceType: turf.surfaceType || 'Artificial Grass',
+        sportTypes: turf.sportTypes || [],
+        amenities: turf.amenities || [],
+        openingTime: turf.openingTime?.substring(0, 5) || '06:00',
+        closingTime: turf.closingTime?.substring(0, 5) || '23:00',
+        upiId: turf.upiId || '',
+        imageUrls: turf.images || []
+      });
+      return turf;
+    },
+    enabled: isEditMode,
+  });
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -73,11 +99,25 @@ const AddTurf = () => {
         latitude: 0,
         longitude: 0
       };
-      const response = await api.post('/turfs', payload);
+      const response = isEditMode
+        ? await api.put(`/turfs/${id}`, payload)
+        : await api.post('/turfs', payload);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myTurfs'] });
+      queryClient.invalidateQueries({ queryKey: ['turfs'] });
+      navigate('/dashboard');
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      await api.delete(`/turfs/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['myTurfs'] });
+      queryClient.invalidateQueries({ queryKey: ['turfs'] });
       navigate('/dashboard');
     }
   });
@@ -91,6 +131,12 @@ const AddTurf = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleDelete = () => {
+    if (window.confirm('Delete this turf? This cannot be undone.')) {
+      deleteMutation.mutate();
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 text-lime hover:text-lime/80 mb-6 font-bold transition-colors">
@@ -98,7 +144,10 @@ const AddTurf = () => {
       </button>
 
       <div className="glass-card p-8">
-        <h1 className="text-3xl font-black mb-8">LIST NEW TURF</h1>
+        <h1 className="text-3xl font-black mb-8">{isEditMode ? 'EDIT TURF' : 'LIST NEW TURF'}</h1>
+        {loadingTurf ? (
+          <div className="py-20 text-center text-offwhite/50 font-bold">Loading turf...</div>
+        ) : (
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}
@@ -258,13 +307,25 @@ const AddTurf = () => {
           </div>
 
           <button type="submit" disabled={mutation.isPending} className="btn-primary w-full mt-8 py-4 text-lg">
-            {mutation.isPending ? 'Publishing Turf...' : 'Publish Turf'}
+            {mutation.isPending ? (isEditMode ? 'Saving Changes...' : 'Publishing Turf...') : (isEditMode ? 'Save Changes' : 'Publish Turf')}
           </button>
           
           {mutation.isError && (
-            <p className="text-red-400 text-center mt-4 text-sm font-bold">Failed to create turf. Please try again.</p>
+            <p className="text-red-400 text-center mt-4 text-sm font-bold">Failed to save turf. Please try again.</p>
+          )}
+
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="w-full py-4 rounded-2xl font-black text-sm bg-red-500/10 text-red-300 hover:bg-red-500 hover:text-white transition-all"
+            >
+              {deleteMutation.isPending ? 'Deleting Turf...' : 'Delete Turf'}
+            </button>
           )}
         </form>
+        )}
       </div>
     </div>
   );

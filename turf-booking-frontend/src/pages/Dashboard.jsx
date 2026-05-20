@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { useNavigate, Link } from 'react-router-dom';
-import { Plus, MapPin, Calendar, Clock, ChevronRight, Settings, Ticket, X, Download, Star } from 'lucide-react';
+import { Plus, MapPin, Calendar, Clock, ChevronRight, Settings, Ticket, X, Download, Star, Pencil, BadgeCheck, CircleDollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { useState } from 'react';
@@ -53,6 +53,14 @@ const Dashboard = () => {
         alert(err.response?.data?.message || 'Failed to cancel booking.');
       }
     }
+  };
+
+  const ownerStats = {
+    totalTurfs: myTurfs?.length || 0,
+    approvedTurfs: myTurfs?.filter(turf => turf.status === 'APPROVED').length || 0,
+    averagePrice: myTurfs?.length
+      ? Math.round(myTurfs.reduce((sum, turf) => sum + Number(turf.pricePerHour || 0), 0) / myTurfs.length)
+      : 0,
   };
 
   return (
@@ -109,6 +117,20 @@ const Dashboard = () => {
         <div className="lg:col-span-2">
           {user?.role === 'OWNER' ? (
             <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="glass-card p-5">
+                  <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Turfs</p>
+                  <p className="text-3xl font-black text-lime mt-2">{ownerStats.totalTurfs}</p>
+                </div>
+                <div className="glass-card p-5">
+                  <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Approved</p>
+                  <p className="text-3xl font-black text-lime mt-2">{ownerStats.approvedTurfs}</p>
+                </div>
+                <div className="glass-card p-5">
+                  <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Avg Price</p>
+                  <p className="text-3xl font-black text-lime mt-2">${ownerStats.averagePrice}</p>
+                </div>
+              </div>
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <Calendar className="text-lime" size={20} /> My Registered Turfs
               </h3>
@@ -135,6 +157,8 @@ const Dashboard = () => {
                             <span className="flex items-center gap-1"><MapPin size={14} /> {turf.city}</span>
                             <span className="w-1 h-1 bg-white/20 rounded-full"></span>
                             <span className="text-lime font-bold">${turf.pricePerHour}/hr</span>
+                            <span className="w-1 h-1 bg-white/20 rounded-full"></span>
+                            <span className="flex items-center gap-1 text-lime"><BadgeCheck size={14} /> {turf.status}</span>
                           </div>
                         </div>
                       </div>
@@ -144,6 +168,12 @@ const Dashboard = () => {
                           className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl hover:bg-lime/20 text-xs font-bold transition-all border border-transparent hover:border-lime/30"
                         >
                           <Settings size={14} /> Manage Slots
+                        </Link>
+                        <Link
+                          to={`/turfs/${turf.id}/edit`}
+                          className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl hover:bg-lime/20 text-xs font-bold transition-all border border-transparent hover:border-lime/30"
+                        >
+                          <Pencil size={14} /> Edit
                         </Link>
                         <Link to={`/turfs/${turf.id}`} className="p-3 bg-white/5 rounded-xl hover:bg-lime hover:text-forest transition-all">
                           <ChevronRight size={20} />
@@ -164,6 +194,22 @@ const Dashboard = () => {
               <h3 className="text-xl font-bold flex items-center gap-2">
                 <Clock className="text-lime" size={20} /> My Recent Bookings
               </h3>
+              {myBookings?.content?.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="glass-card p-5">
+                    <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Bookings</p>
+                    <p className="text-3xl font-black text-lime mt-2">{myBookings.content.length}</p>
+                  </div>
+                  <div className="glass-card p-5">
+                    <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Confirmed</p>
+                    <p className="text-3xl font-black text-lime mt-2">{myBookings.content.filter(booking => booking.status === 'CONFIRMED').length}</p>
+                  </div>
+                  <div className="glass-card p-5">
+                    <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Paid</p>
+                    <p className="text-3xl font-black text-lime mt-2 flex items-center gap-2"><CircleDollarSign />{myBookings.content.filter(booking => booking.paymentStatus === 'PAID').length}</p>
+                  </div>
+                </div>
+              )}
               
               {loadingBookings ? (
                 <div className="animate-pulse space-y-4">

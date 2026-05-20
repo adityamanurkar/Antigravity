@@ -25,9 +25,12 @@ public class TurfController {
     @GetMapping
     public ResponseEntity<Page<TurfDto>> getAllTurfs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String sport
     ) {
-        return ResponseEntity.ok(turfService.getAllApprovedTurfs(PageRequest.of(page, size)));
+        return ResponseEntity.ok(turfService.getAllApprovedTurfs(PageRequest.of(page, size), search, city, sport));
     }
 
     @GetMapping("/{id}")
@@ -42,6 +45,26 @@ public class TurfController {
             @AuthenticationPrincipal UserDetailsImpl userDetails
     ) {
         return ResponseEntity.ok(turfService.createTurf(request, userDetails.getId()));
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @PutMapping("/{id}")
+    public ResponseEntity<TurfDto> updateTurf(
+            @PathVariable Long id,
+            @RequestBody TurfCreateRequest request,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        return ResponseEntity.ok(turfService.updateTurf(id, request, userDetails.getId()));
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTurf(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetailsImpl userDetails
+    ) {
+        turfService.deleteTurf(id, userDetails.getId());
+        return ResponseEntity.noContent().build();
     }
 
     @PreAuthorize("hasRole('OWNER')")

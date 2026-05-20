@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import TurfListing from './pages/TurfListing';
 import Dashboard from './pages/Dashboard';
 import AddTurf from './pages/AddTurf';
+import AdminDashboard from './pages/AdminDashboard';
 import TurfDetail from './pages/TurfDetail';
 import ManageSlots from './pages/ManageSlots';
 import { useAuthStore } from './store/authStore';
@@ -33,6 +34,8 @@ function App() {
             <Route path="/turfs" element={<TurfListing />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/add-turf" element={<ProtectedRoute allowedRoles={['OWNER']}><AddTurf /></ProtectedRoute>} />
+            <Route path="/turfs/:id/edit" element={<ProtectedRoute allowedRoles={['OWNER']}><AddTurf /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
             <Route path="/turfs/:id" element={<TurfDetail />} />
             <Route path="/turfs/:id/manage" element={<ProtectedRoute allowedRoles={['OWNER']}><ManageSlots /></ProtectedRoute>} />
           </Routes>

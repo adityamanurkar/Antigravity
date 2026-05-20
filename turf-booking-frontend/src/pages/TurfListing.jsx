@@ -11,19 +11,20 @@ const TurfListing = () => {
   const [isRadarScanning, setIsRadarScanning] = useState(false);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['turfs'],
+    queryKey: ['turfs', searchTerm, selectedSport],
     queryFn: async () => {
-      const response = await api.get('/turfs');
+      const response = await api.get('/turfs', {
+        params: {
+          search: searchTerm || undefined,
+          sport: selectedSport || undefined,
+          size: 50,
+        }
+      });
       return response.data.content;
     }
   });
 
-  const filteredTurfs = data?.filter(turf => {
-    const matchesSearch = turf.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         turf.city.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSport = selectedSport === '' || turf.sportTypes.includes(selectedSport);
-    return matchesSearch && matchesSport;
-  });
+  const filteredTurfs = data;
 
   const sports = ['Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Pickleball'];
 

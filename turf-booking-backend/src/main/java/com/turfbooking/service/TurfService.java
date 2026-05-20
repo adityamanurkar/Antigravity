@@ -11,11 +11,15 @@ import com.turfbooking.repository.TurfRepository;
 import com.turfbooking.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,8 +30,18 @@ public class TurfService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public Page<TurfDto> getAllApprovedTurfs(Pageable pageable) {
-        return turfRepository.findByStatus(TurfStatus.APPROVED, pageable).map(this::mapToDto);
+    public Page<TurfDto> getAllApprovedTurfs(Pageable pageable, String search, String city, String sport) {
+        List<TurfDto> filteredTurfs = turfRepository.findByStatus(TurfStatus.APPROVED, Pageable.unpaged())
+                .stream()
+                .filter(turf -> matchesText(turf, search))
+                .filter(turf -> matchesCity(turf, city))
+                .filter(turf -> matchesSport(turf, sport))
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+
+        int start = Math.min((int) pageable.getOffset(), filteredTurfs.size());
+        int end = Math.min(start + pageable.getPageSize(), filteredTurfs.size());
+        return new PageImpl<>(filteredTurfs.subList(start, end), pageable, filteredTurfs.size());
     }
 
     @Transactional(readOnly = true)
@@ -71,6 +85,53 @@ public class TurfService {
         return mapToDto(turfRepository.save(turf));
     }
 
+    @Transactional
+    public TurfDto updateTurf(Long id, TurfCreateRequest request, Long ownerId) {
+        Turf turf = turfRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turf not found"));
+        validateOwner(turf, ownerId);
+
+        turf.setName(request.getName());
+        turf.setDescription(request.getDescription());
+        turf.setAddress(request.getAddress());
+        turf.setCity(request.getCity());
+        turf.setLatitude(request.getLatitude());
+        turf.setLongitude(request.getLongitude());
+        turf.setPricePerHour(request.getPricePerHour());
+        turf.setSurfaceType(request.getSurfaceType());
+        turf.setSportTypes(request.getSportTypes());
+        turf.setAmenities(request.getAmenities());
+        turf.setOpeningTime(request.getOpeningTime());
+        turf.setClosingTime(request.getClosingTime());
+        turf.setUpiId(request.getUpiId());
+
+        List<TurfImage> images = new ArrayList<>();
+        if (request.getImageUrls() != null) {
+            images = request.getImageUrls().stream()
+                    .map(url -> TurfImage.builder().turf(turf).imageUrl(url).isPrimary(false).build())
+                    .collect(Collectors.toList());
+            if (!images.isEmpty()) {
+                images.get(0).setIsPrimary(true);
+            }
+        }
+        if (turf.getImages() == null) {
+            turf.setImages(new ArrayList<>());
+        } else {
+            turf.getImages().clear();
+        }
+        turf.getImages().addAll(images);
+
+        return mapToDto(turfRepository.save(turf));
+    }
+
+    @Transactional
+    public void deleteTurf(Long id, Long ownerId) {
+        Turf turf = turfRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Turf not found"));
+        validateOwner(turf, ownerId);
+        turfRepository.delete(turf);
+    }
+
     @Transactional(readOnly = true)
     public List<TurfDto> getTurfsByOwner(Long ownerId) {
         return turfRepository.findByOwnerId(ownerId).stream()
@@ -84,6 +145,48 @@ public class TurfService {
                 .orElseThrow(() -> new ResourceNotFoundException("Turf not found"));
         turf.setStatus(status);
         return mapToDto(turfRepository.save(turf));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TurfDto> getAllTurfsForAdmin(TurfStatus status) {
+        return turfRepository.findAll().stream()
+                .filter(turf -> status == null || turf.getStatus() == status)
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    private boolean matchesText(Turf turf, String search) {
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+        String needle = search.toLowerCase(Locale.ROOT);
+        return contains(turf.getName(), needle)
+                || contains(turf.getCity(), needle)
+                || contains(turf.getAddress(), needle)
+                || contains(turf.getSurfaceType(), needle);
+    }
+
+    private boolean matchesCity(Turf turf, String city) {
+        return city == null || city.isBlank() || contains(turf.getCity(), city.toLowerCase(Locale.ROOT));
+    }
+
+    private boolean matchesSport(Turf turf, String sport) {
+        if (sport == null || sport.isBlank()) {
+            return true;
+        }
+        String needle = sport.toLowerCase(Locale.ROOT);
+        return turf.getSportTypes() != null && turf.getSportTypes().stream()
+                .anyMatch(value -> value != null && value.toLowerCase(Locale.ROOT).contains(needle));
+    }
+
+    private boolean contains(String value, String needle) {
+        return value != null && value.toLowerCase(Locale.ROOT).contains(needle);
+    }
+
+    private void validateOwner(Turf turf, Long ownerId) {
+        if (!turf.getOwner().getId().equals(ownerId)) {
+            throw new AccessDeniedException("You are not allowed to manage this turf");
+        }
     }
 
     private TurfDto mapToDto(Turf turf) {
