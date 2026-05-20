@@ -36,9 +36,8 @@ public class UploadController {
             // Save file
             Files.copy(file.getInputStream(), filePath);
 
-            // Construct dynamic URL from request host
-            String baseUrl = request.getRequestURL().toString().replace(request.getRequestURI(), "");
-            String fileUrl = baseUrl + "/api/uploads/" + filename;
+            // Construct relative URL
+            String fileUrl = "/api/uploads/" + filename;
 
             // Return URL
             Map<String, String> response = new HashMap<>();

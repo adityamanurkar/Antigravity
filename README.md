@@ -16,7 +16,7 @@ A complete, fully functioning Turf Booking System with a production-grade UI/UX 
 The easiest way to run the entire application is using Docker Compose.
 
 ```bash
-cd /e/Antigravity
+cd /e/Turfiez
 docker-compose up --build
 ```
 

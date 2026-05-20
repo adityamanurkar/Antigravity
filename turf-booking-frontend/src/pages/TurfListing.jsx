@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Search, MapPin, Star, Filter, ArrowRight, Crosshair, Radar } from 'lucide-react';
 import api from '../api/axiosConfig';
+import { getImageUrl } from '../utils/imageUtils';
 
 const TurfListing = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,7 +129,7 @@ const TurfListing = () => {
             <div key={turf.id} className="glass-card flex flex-col h-full group">
               <div className="relative h-60 overflow-hidden">
                 <img 
-                  src={turf.images?.[0] || 'https://images.unsplash.com/photo-1518605368461-1e122b5e28cd?auto=format&fit=crop&q=80'} 
+                  src={getImageUrl(turf.images?.[0])} 
                   alt={turf.name} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />

@@ -1,6 +1,7 @@
 import { useAuthStore } from '../store/authStore';
 import { useQuery } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
+import { getImageUrl } from '../utils/imageUtils';
 import { useNavigate, Link } from 'react-router-dom';
 import { Plus, MapPin, Calendar, Clock, ChevronRight, Settings, Ticket, X, Download, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -132,7 +133,7 @@ const Dashboard = () => {
                       <div className="flex items-center gap-6">
                         <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10">
                           {turf.images?.[0] ? (
-                            <img src={turf.images[0]} alt={turf.name} className="w-full h-full object-cover" />
+                            <img src={getImageUrl(turf.images[0])} alt={turf.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-white/20 font-black">T</div>
                           )}

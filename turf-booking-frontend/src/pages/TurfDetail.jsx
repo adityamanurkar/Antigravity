@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
+import { getImageUrl } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, Info, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
@@ -116,7 +117,7 @@ const TurfDetail = () => {
           <div className="relative aspect-video rounded-3xl overflow-hidden glass-card group">
             {turf?.images?.length > 0 ? (
               <img 
-                src={turf.images[currentImageIndex]} 
+                src={getImageUrl(turf.images[currentImageIndex])} 
                 alt={turf.name} 
                 className="w-full h-full object-cover"
               />
