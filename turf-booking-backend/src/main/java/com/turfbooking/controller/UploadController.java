@@ -21,7 +21,7 @@ import java.util.Map;
 public class UploadController {
 
     private final CloudinaryService cloudinaryService;
-    private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
     private static final Path LEGACY_UPLOAD_DIR = Paths.get("uploads").toAbsolutePath().normalize();
 
     @PreAuthorize("hasRole('OWNER')")

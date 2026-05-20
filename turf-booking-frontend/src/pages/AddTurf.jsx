@@ -50,7 +50,7 @@ const AddTurf = () => {
       }));
     } catch (error) {
       console.error('Upload failed', error);
-      alert('Failed to upload some images.');
+      alert(error.response?.data?.error || 'Failed to upload some images.');
     } finally {
       setUploading(false);
     }
