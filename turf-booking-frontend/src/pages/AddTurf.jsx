@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -224,7 +224,7 @@ const AddTurf = () => {
                       exit={{ opacity: 0, scale: 0.8 }}
                       className="relative aspect-square rounded-2xl overflow-hidden group"
                     >
-                      <img src={getImageUrl(url)} alt="Turf" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(url)} alt="Turf" onError={handleImageError} className="w-full h-full object-cover" />
                       <button 
                         type="button"
                         onClick={() => removeImage(index)}

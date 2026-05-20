@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
@@ -119,6 +119,7 @@ const TurfDetail = () => {
               <img 
                 src={getImageUrl(turf.images[currentImageIndex])} 
                 alt={turf.name} 
+                onError={handleImageError}
                 className="w-full h-full object-cover"
               />
             ) : (

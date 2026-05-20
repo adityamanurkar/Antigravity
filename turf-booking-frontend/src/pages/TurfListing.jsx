@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Star, ArrowRight, Radar } from 'lucide-react';
 import api from '../api/axiosConfig';
-import { getImageUrl } from '../utils/imageUtils';
+import { getImageUrl, handleImageError } from '../utils/imageUtils';
 
 const TurfListing = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -130,6 +130,7 @@ const TurfListing = () => {
                 <img 
                   src={getImageUrl(turf.images?.[0])} 
                   alt={turf.name} 
+                  onError={handleImageError}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute bottom-4 left-4 flex gap-2">

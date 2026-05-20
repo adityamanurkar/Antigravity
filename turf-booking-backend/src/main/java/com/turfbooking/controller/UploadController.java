@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +22,7 @@ public class UploadController {
 
     private final CloudinaryService cloudinaryService;
     private static final long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+    private static final Path LEGACY_UPLOAD_DIR = Paths.get("uploads").toAbsolutePath().normalize();
 
     @PreAuthorize("hasRole('OWNER')")
     @PostMapping
@@ -33,6 +37,23 @@ public class UploadController {
             return ResponseEntity.ok(response);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @GetMapping("/{filename:.+}")
+    public ResponseEntity<byte[]> getLegacyFile(@PathVariable String filename) {
+        try {
+            Path filePath = LEGACY_UPLOAD_DIR.resolve(filename).normalize();
+            if (!filePath.startsWith(LEGACY_UPLOAD_DIR) || !Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String contentType = Files.probeContentType(filePath);
+            return ResponseEntity.ok()
+                    .header("Content-Type", contentType != null ? contentType : "image/jpeg")
+                    .body(Files.readAllBytes(filePath));
+        } catch (IOException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 
