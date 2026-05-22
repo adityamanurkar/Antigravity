@@ -268,6 +268,7 @@ const TurfListing = () => {
           ))}
         </div>
       )}
+        </div>
       </div>
     </div>
   );
