@@ -86,7 +86,7 @@ const TurfDetail = () => {
       setTimeout(() => {
         setShowNotification(false);
         navigate('/dashboard');
-      }, 500);
+      }, 3000);
     },
     onError: (err) => {
       setPaymentStep('input');
@@ -202,7 +202,7 @@ const TurfDetail = () => {
                 </div>
                 <div>
                   <p className="text-offwhite/40 text-xs font-bold uppercase tracking-widest">Price</p>
-                  <p className="text-xl font-black">₹{turf?.pricePerHour}<span className="text-sm font-normal text-offwhite/40">/hr</span></p>
+                  <p className="text-xl font-black">${turf?.pricePerHour}<span className="text-sm font-normal text-offwhite/40">/hr</span></p>
                 </div>
               </div>
               <div className="glass-card flex-1 p-4 flex items-center gap-4">
@@ -403,7 +403,7 @@ const TurfDetail = () => {
                     <CheckCircle size={20} />
                     <span className="font-bold">Slot Selected</span>
                   </div>
-                  <span className="text-offwhite font-black">₹{turf?.pricePerHour}</span>
+                  <span className="text-offwhite font-black">${turf?.pricePerHour}</span>
                 </div>
               )}
 
@@ -553,7 +553,7 @@ const TurfDetail = () => {
                       setPaymentStep('processing');
                       setTimeout(() => {
                         bookingMutation.mutate({ slotId: selectedSlot, transactionId: utrNumber.trim() });
-                      }, 500);
+                      }, 2000);
                     }}
                     className={`w-full py-4 rounded-2xl text-lg font-black transition-all ${
                       utrNumber.trim().length < 8

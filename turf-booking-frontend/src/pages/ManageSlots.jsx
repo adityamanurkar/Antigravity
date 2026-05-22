@@ -104,7 +104,7 @@ const ManageSlots = () => {
                 <label className="text-xs font-bold text-offwhite/40 uppercase tracking-widest">Price Override (Optional)</label>
                 <input 
                   type="number" 
-                  placeholder={`Default: ₹${turf?.pricePerHour}`}
+                  placeholder={`Default: $${turf?.pricePerHour}`}
                   value={generateData.price}
                   onChange={(e) => setGenerateData({...generateData, price: e.target.value})}
                   className="input-field w-full" 

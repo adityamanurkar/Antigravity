@@ -193,7 +193,7 @@ const Dashboard = () => {
                 </div>
                 <div className="glass-card p-5">
                   <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Avg Price</p>
-                  <p className="text-3xl font-black text-lime mt-2">₹{ownerStats.averagePrice}</p>
+                  <p className="text-3xl font-black text-lime mt-2">${ownerStats.averagePrice}</p>
                 </div>
               </div>
 
@@ -220,7 +220,7 @@ const Dashboard = () => {
                           <h4 className="font-bold text-lg text-offwhite">{booking.turfName || 'Turf'}</h4>
                           <div className="text-sm text-offwhite/50 space-y-0.5">
                             <p>Player: <span className="text-offwhite font-medium">{booking.userName || 'Unknown'}</span> ({booking.userEmail || 'N/A'})</p>
-                            <p className="text-xs text-offwhite/40">Ref: #{booking.bookingRef} | Price: <span className="text-lime font-black">₹{booking.totalPrice}</span></p>
+                            <p className="text-xs text-offwhite/40">Ref: #{booking.bookingRef} | Price: <span className="text-lime font-black">${booking.totalPrice}</span></p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 self-end sm:self-center">
@@ -274,7 +274,7 @@ const Dashboard = () => {
                           <div className="flex items-center gap-3 text-offwhite/50 text-sm mt-1">
                             <span className="flex items-center gap-1"><MapPin size={14} /> {turf.city}</span>
                             <span className="w-1 h-1 bg-white/20 rounded-full"></span>
-                            <span className="text-lime font-bold">₹{turf.pricePerHour}/hr</span>
+                            <span className="text-lime font-bold">${turf.pricePerHour}/hr</span>
                             <span className="w-1 h-1 bg-white/20 rounded-full"></span>
                             <span className="flex items-center gap-1 text-lime"><BadgeCheck size={14} /> {turf.status}</span>
                           </div>
@@ -356,7 +356,7 @@ const Dashboard = () => {
                       <div className="flex items-center gap-4">
                         <div className="text-right mr-4">
                            <p className="text-xs text-offwhite/40 font-bold uppercase tracking-widest">Total</p>
-                           <p className="font-black text-lime">₹{booking.totalPrice}</p>
+                           <p className="font-black text-lime">${booking.totalPrice}</p>
                         </div>
                         {booking.paymentStatus === 'PAID' && !booking.reviewed && (
                           <button

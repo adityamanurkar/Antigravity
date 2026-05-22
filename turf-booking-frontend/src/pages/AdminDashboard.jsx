@@ -110,7 +110,7 @@ const AdminDashboard = () => {
                 <div key={turf.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white/5 rounded-2xl border border-white/5">
                   <div>
                     <h3 className="text-lg font-black">{turf.name}</h3>
-                    <p className="text-sm text-offwhite/50">{turf.city} · ₹{turf.pricePerHour}/hr · Owner #{turf.ownerId}</p>
+                    <p className="text-sm text-offwhite/50">{turf.city} · ${turf.pricePerHour}/hr · Owner #{turf.ownerId}</p>
                     <p className="text-xs font-black text-lime mt-2">{turf.status}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -177,7 +177,7 @@ const AdminDashboard = () => {
                 <div key={booking.id} className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-white/5 rounded-2xl border border-white/5">
                   <div>
                     <h3 className="text-lg font-black">Booking #{booking.bookingRef}</h3>
-                    <p className="text-sm text-offwhite/50">Turf ID: {booking.turfId} · User ID: {booking.userId} · ₹{booking.totalPrice}</p>
+                    <p className="text-sm text-offwhite/50">Turf ID: {booking.turfId} · User ID: {booking.userId} · ${booking.totalPrice}</p>
                     <div className="flex items-center gap-2 mt-2">
                         <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${booking.status === 'CONFIRMED' ? 'bg-lime/10 text-lime' : 'bg-red-500/10 text-red-400'}`}>{booking.status}</span>
                         <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${booking.paymentStatus === 'PAID' ? 'bg-lime/10 text-lime' : 'bg-white/10 text-white/50'}`}>{booking.paymentStatus}</span>

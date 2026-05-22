@@ -10,16 +10,28 @@ export const getImageUrl = (url) => {
     return FALLBACK_TURF_IMAGE_URL;
   }
 
-  let trimmedUrl = url.replace(/['"\[\]]/g, '').trim();
+  const trimmedUrl = url.trim();
+
+  if (trimmedUrl.includes('/api/uploads/')) {
+    const parts = trimmedUrl.split('/api/uploads/');
+    const filename = parts[parts.length - 1];
+    return `${getServerOrigin()}/api/uploads/${filename}`;
+  }
+
+  if (trimmedUrl.startsWith('api/uploads/') || trimmedUrl.startsWith('uploads/')) {
+    const filename = trimmedUrl.replace(/^api\/uploads\//, '').replace(/^uploads\//, '');
+    return `${getServerOrigin()}/api/uploads/${filename}`;
+  }
 
   if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
     return trimmedUrl;
   }
 
-  const parts = trimmedUrl.split('/');
-  const filename = parts[parts.length - 1];
+  if (trimmedUrl.startsWith('/')) {
+    return `${getServerOrigin()}${trimmedUrl}`;
+  }
 
-  return `${getServerOrigin()}/api/uploads/${filename}`;
+  return trimmedUrl;
 };
 
 export const handleImageError = (event) => {
