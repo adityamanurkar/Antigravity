@@ -90,7 +90,6 @@ public class AdminController {
                         .slotDate(booking.getTimeSlot().getSlotDate())
                         .startTime(booking.getTimeSlot().getStartTime())
                         .endTime(booking.getTimeSlot().getEndTime())
-                        .price(booking.getTimeSlot().getPrice())
                         .status(booking.getTimeSlot().getStatus())
                         .build())
                 .build();
