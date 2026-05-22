@@ -188,7 +188,7 @@ const AddTurf = () => {
           {/* Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-offwhite/80">Price Per Hour ($)</label>
+              <label className="text-sm font-bold text-offwhite/80">Price Per Hour (₹)</label>
               <div className="relative">
                 <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-offwhite/40" size={18} />
                 <input required type="number" name="pricePerHour" value={formData.pricePerHour} onChange={handleChange} className="input-field w-full pl-11" placeholder="50" />

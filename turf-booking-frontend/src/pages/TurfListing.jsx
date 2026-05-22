@@ -51,7 +51,7 @@ const TurfListing = () => {
         setTimeout(() => {
           setSearchTerm('New York'); // Simulate finding turfs in a specific city
           setIsRadarScanning(false);
-        }, 2000);
+        }, 300);
       }, () => {
         alert('Location access denied.');
         setIsRadarScanning(false);
@@ -253,7 +253,7 @@ const TurfListing = () => {
                 <div className="flex items-center justify-between pt-6 border-t border-white/10">
                   <div>
                     <p className="text-[10px] font-black text-offwhite/30 uppercase tracking-widest">Starting from</p>
-                    <p className="text-xl font-black text-lime">${turf.pricePerHour}<span className="text-sm font-normal text-offwhite/40">/hr</span></p>
+                    <p className="text-xl font-black text-lime">₹{turf.pricePerHour}<span className="text-sm font-normal text-offwhite/40">/hr</span></p>
                   </div>
                   <Link 
                     to={`/turfs/${turf.id}`}
