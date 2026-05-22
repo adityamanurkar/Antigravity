@@ -1,7 +1,7 @@
 export const FALLBACK_TURF_IMAGE_URL = 'https://images.unsplash.com/photo-1518605368461-1e122b5e28cd?auto=format&fit=crop&q=80';
 
 const getServerOrigin = () => {
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://antigravity-1lt9.onrender.com/api';
   return apiBase.replace(/\/api\/?$/, '');
 };
 
