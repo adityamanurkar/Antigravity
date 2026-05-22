@@ -9,17 +9,24 @@ const TurfListing = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSport, setSelectedSport] = useState('');
   const [isRadarScanning, setIsRadarScanning] = useState(false);
+  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['turfs', searchTerm, selectedSport],
+    queryKey: ['turfs', searchTerm, selectedSport, priceRange.min, priceRange.max, selectedDate, selectedAmenities],
     queryFn: async () => {
-      const response = await api.get('/turfs', {
-        params: {
-          search: searchTerm || undefined,
-          sport: selectedSport || undefined,
-          size: 50,
-        }
-      });
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (selectedSport) params.append('sport', selectedSport);
+      if (priceRange.min) params.append('minPrice', priceRange.min);
+      if (priceRange.max) params.append('maxPrice', priceRange.max);
+      if (selectedDate) params.append('availableDate', selectedDate);
+      selectedAmenities.forEach(a => params.append('amenities', a));
+      params.append('size', '50');
+
+      const response = await api.get('/turfs', { params });
       return response.data.content;
     }
   });
@@ -27,6 +34,13 @@ const TurfListing = () => {
   const filteredTurfs = data;
 
   const sports = ['Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Pickleball'];
+  const amenities = ['LED Floodlights', 'Parking', 'Changing Rooms', 'Drinking Water', 'Washrooms', 'First Aid', 'CCTV'];
+
+  const handleAmenityToggle = (amenity) => {
+    setSelectedAmenities(prev => 
+      prev.includes(amenity) ? prev.filter(a => a !== amenity) : [...prev, amenity]
+    );
+  };
 
   const handleRadarScan = () => {
     setIsRadarScanning(true);
@@ -42,6 +56,9 @@ const TurfListing = () => {
         alert('Location access denied.');
         setIsRadarScanning(false);
       });
+    } else {
+      alert('Geolocation is not supported by your browser.');
+      setIsRadarScanning(false);
     }
   };
 
@@ -79,7 +96,14 @@ const TurfListing = () => {
       </div>
 
       {/* Sport Filters */}
-      <div className="flex flex-wrap gap-3 mb-10">
+      <div className="flex flex-wrap items-center gap-3 mb-8">
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-5 py-2 rounded-full font-medium transition-all flex items-center gap-2 ${showFilters ? 'bg-lime text-forest' : 'border border-white/10 text-offwhite hover:border-white/30'}`}
+        >
+          <Search size={16} /> Filters
+        </button>
+        <div className="w-px h-6 bg-white/20 mx-2"></div>
         <button 
           onClick={() => setSelectedSport('')}
           className={`px-5 py-2 rounded-full font-medium transition-all ${selectedSport === '' ? 'bg-lime text-forest' : 'bg-forest-light text-offwhite hover:bg-forest-light/80'}`}
@@ -97,34 +121,103 @@ const TurfListing = () => {
         ))}
       </div>
 
-      {/* Grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1,2,3,4,5,6].map(i => (
-            <div key={i} className="glass-card animate-pulse">
-              <div className="h-60 bg-forest-light/50" />
-              <div className="p-6 space-y-4">
-                <div className="h-6 bg-forest-light/50 rounded w-3/4" />
-                <div className="h-4 bg-forest-light/50 rounded w-1/2" />
-                <div className="h-4 bg-forest-light/50 rounded w-full" />
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Advanced Filters Sidebar */}
+        {showFilters && (
+          <div className="w-full lg:w-64 flex-shrink-0 glass-card p-6 h-fit space-y-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg">Filters</h3>
+              <button 
+                onClick={() => {
+                  setPriceRange({ min: '', max: '' });
+                  setSelectedDate('');
+                  setSelectedAmenities([]);
+                }}
+                className="text-xs text-lime hover:underline"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-offwhite/60 uppercase tracking-wider">Date Availability</label>
+              <input 
+                type="date" 
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input-field w-full text-sm py-2"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-offwhite/60 uppercase tracking-wider">Price Range ($/hr)</label>
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  placeholder="Min" 
+                  value={priceRange.min}
+                  onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
+                  className="input-field w-full text-sm py-2"
+                />
+                <span className="text-offwhite/40">-</span>
+                <input 
+                  type="number" 
+                  placeholder="Max" 
+                  value={priceRange.max}
+                  onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
+                  className="input-field w-full text-sm py-2"
+                />
               </div>
             </div>
-          ))}
-        </div>
-      ) : error ? (
-        <div className="text-center py-20">
-          <p className="text-red-400">Failed to load turfs. Please try again later.</p>
-        </div>
-      ) : filteredTurfs?.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-20 h-20 bg-forest-light rounded-full flex items-center justify-center mx-auto mb-6 text-offwhite/30">
-            <Search size={32} />
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-offwhite/60 uppercase tracking-wider">Amenities</label>
+              <div className="space-y-2">
+                {amenities.map(amenity => (
+                  <label key={amenity} className="flex items-center gap-2 cursor-pointer group">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedAmenities.includes(amenity)}
+                      onChange={() => handleAmenityToggle(amenity)}
+                      className="w-4 h-4 rounded border-white/20 bg-forest-light text-lime focus:ring-lime focus:ring-offset-forest"
+                    />
+                    <span className="text-sm text-offwhite/80 group-hover:text-offwhite">{amenity}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
-          <h3 className="text-2xl font-bold mb-2">No turfs found</h3>
-          <p className="text-offwhite/60">Try adjusting your search criteria</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        )}
+
+        {/* Grid */}
+        <div className="flex-1">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="glass-card animate-pulse">
+                  <div className="h-60 bg-forest-light/50" />
+                  <div className="p-6 space-y-4">
+                    <div className="h-6 bg-forest-light/50 rounded w-3/4" />
+                    <div className="h-4 bg-forest-light/50 rounded w-1/2" />
+                    <div className="h-4 bg-forest-light/50 rounded w-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-20">
+              <p className="text-red-400">Failed to load turfs. Please try again later.</p>
+            </div>
+          ) : filteredTurfs?.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-20 h-20 bg-forest-light rounded-full flex items-center justify-center mx-auto mb-6 text-offwhite/30">
+                <Search size={32} />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">No turfs found</h3>
+              <p className="text-offwhite/60">Try adjusting your search criteria</p>
+            </div>
+          ) : (
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${showFilters ? 'lg:grid-cols-2 xl:grid-cols-3' : 'lg:grid-cols-3'} gap-8`}>
           {filteredTurfs?.map(turf => (
             <div key={turf.id} className="glass-card flex flex-col h-full group">
               <div className="relative h-60 overflow-hidden">
@@ -175,6 +268,7 @@ const TurfListing = () => {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 };

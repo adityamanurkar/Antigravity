@@ -28,9 +28,13 @@ public class TurfController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String city,
-            @RequestParam(required = false) String sport
+            @RequestParam(required = false) String sport,
+            @RequestParam(required = false) java.math.BigDecimal minPrice,
+            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(required = false) List<String> amenities,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate availableDate
     ) {
-        return ResponseEntity.ok(turfService.getAllApprovedTurfs(PageRequest.of(page, size), search, city, sport));
+        return ResponseEntity.ok(turfService.getAllApprovedTurfs(PageRequest.of(page, size), search, city, sport, minPrice, maxPrice, amenities, availableDate));
     }
 
     @GetMapping("/{id}")

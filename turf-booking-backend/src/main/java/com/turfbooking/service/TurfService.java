@@ -28,14 +28,18 @@ public class TurfService {
 
     private final TurfRepository turfRepository;
     private final UserRepository userRepository;
+    private final com.turfbooking.repository.TimeSlotRepository timeSlotRepository;
 
     @Transactional(readOnly = true)
-    public Page<TurfDto> getAllApprovedTurfs(Pageable pageable, String search, String city, String sport) {
+    public Page<TurfDto> getAllApprovedTurfs(Pageable pageable, String search, String city, String sport, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice, List<String> amenities, java.time.LocalDate availableDate) {
         List<TurfDto> filteredTurfs = turfRepository.findByStatus(TurfStatus.APPROVED, Pageable.unpaged())
                 .stream()
                 .filter(turf -> matchesText(turf, search))
                 .filter(turf -> matchesCity(turf, city))
                 .filter(turf -> matchesSport(turf, sport))
+                .filter(turf -> matchesPrice(turf, minPrice, maxPrice))
+                .filter(turf -> matchesAmenities(turf, amenities))
+                .filter(turf -> matchesAvailability(turf, availableDate))
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
 
@@ -71,7 +75,7 @@ public class TurfService {
                 .openingTime(request.getOpeningTime())
                 .closingTime(request.getClosingTime())
                 .upiId(request.getUpiId())
-                .status(TurfStatus.APPROVED)
+                .status(TurfStatus.PENDING)
                 .build();
 
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
@@ -181,6 +185,26 @@ public class TurfService {
 
     private boolean contains(String value, String needle) {
         return value != null && value.toLowerCase(Locale.ROOT).contains(needle);
+    }
+
+    private boolean matchesPrice(Turf turf, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {
+        if (minPrice != null && turf.getPricePerHour().compareTo(minPrice) < 0) return false;
+        if (maxPrice != null && turf.getPricePerHour().compareTo(maxPrice) > 0) return false;
+        return true;
+    }
+
+    private boolean matchesAmenities(Turf turf, List<String> amenities) {
+        if (amenities == null || amenities.isEmpty()) return true;
+        if (turf.getAmenities() == null) return false;
+        for (String amenity : amenities) {
+            if (!turf.getAmenities().contains(amenity)) return false;
+        }
+        return true;
+    }
+
+    private boolean matchesAvailability(Turf turf, java.time.LocalDate availableDate) {
+        if (availableDate == null) return true;
+        return timeSlotRepository.existsByTurfIdAndSlotDateAndStatus(turf.getId(), availableDate, com.turfbooking.entity.enums.SlotStatus.AVAILABLE);
     }
 
     private void validateOwner(Turf turf, Long ownerId) {

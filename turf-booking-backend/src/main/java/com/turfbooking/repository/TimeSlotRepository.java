@@ -10,4 +10,5 @@ public interface TimeSlotRepository extends JpaRepository<TimeSlot, Long> {
     List<TimeSlot> findByTurfIdAndSlotDate(Long turfId, LocalDate slotDate);
     List<TimeSlot> findByTurfIdAndSlotDateBetween(Long turfId, LocalDate startDate, LocalDate endDate);
     boolean existsByTurfIdAndSlotDateAndStartTime(Long turfId, LocalDate slotDate, java.time.LocalTime startTime);
+    boolean existsByTurfIdAndSlotDateAndStatus(Long turfId, LocalDate slotDate, com.turfbooking.entity.enums.SlotStatus status);
 }

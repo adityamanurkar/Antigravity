@@ -18,4 +18,5 @@ public class UserDto {
     private Role role;
     private String profilePicUrl;
     private Integer loyaltyPoints;
+    private Boolean isActive;
 }

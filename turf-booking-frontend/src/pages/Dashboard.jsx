@@ -85,7 +85,7 @@ const Dashboard = () => {
         <div className="lg:col-span-1">
           <div className="glass-card p-8 border-lime/20">
             <div className="w-20 h-20 bg-lime rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-lime/20 text-forest text-3xl font-black">
-              {user?.name?.[0].toUpperCase()}
+              {user?.name?.[0]?.toUpperCase()}
             </div>
             <h2 className="text-2xl font-bold mb-1">{user?.name}</h2>
             <p className="text-offwhite/50 text-sm mb-6 uppercase tracking-widest">{user?.role}</p>
@@ -317,7 +317,9 @@ const Dashboard = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-[10px] font-black opacity-30 uppercase">Status</p>
-                        <p className="text-sm font-black text-green-600 bg-green-100 px-2 py-0.5 rounded-full inline-block">CONFIRMED</p>
+                        <p className={`text-sm font-black px-2 py-0.5 rounded-full inline-block ${
+                          selectedBooking.status === 'CONFIRMED' ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'
+                        }`}>{selectedBooking.status}</p>
                       </div>
                     </div>
 

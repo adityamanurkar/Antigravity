@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
-import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AddTurf = () => {
@@ -87,6 +87,16 @@ const AddTurf = () => {
       ...prev,
       imageUrls: prev.imageUrls.filter((_, i) => i !== index)
     }));
+  };
+
+  const makeCover = (index) => {
+    if (index === 0) return;
+    setFormData(prev => {
+      const newUrls = [...prev.imageUrls];
+      const [item] = newUrls.splice(index, 1);
+      newUrls.unshift(item);
+      return { ...prev, imageUrls: newUrls };
+    });
   };
   const mutation = useMutation({
     mutationFn: async (data) => {
@@ -274,13 +284,28 @@ const AddTurf = () => {
                       className="relative aspect-square rounded-2xl overflow-hidden group"
                     >
                       <img src={getImageUrl(url)} alt="Turf" onError={handleImageError} className="w-full h-full object-cover" />
-                      <button 
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={14} />
-                      </button>
+                      {index === 0 && (
+                        <div className="absolute top-2 left-2 bg-lime text-forest text-[10px] font-black px-2 py-1 rounded-md">COVER</div>
+                      )}
+                      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {index !== 0 && (
+                          <button 
+                            type="button"
+                            onClick={() => makeCover(index)}
+                            className="p-1.5 bg-forest/80 rounded-full text-white hover:text-lime transition-colors"
+                            title="Make Cover"
+                          >
+                            <Star size={14} />
+                          </button>
+                        )}
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="p-1.5 bg-red-500 rounded-full text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     </motion.div>
                   ))}
                 </AnimatePresence>

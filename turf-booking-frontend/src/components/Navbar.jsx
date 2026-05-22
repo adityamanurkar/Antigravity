@@ -100,29 +100,29 @@ const Navbar = () => {
             className="md:hidden bg-forest-dark border-b border-white/10"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <Link to="/turfs" className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
+              <Link to="/turfs" onClick={() => setIsOpen(false)} className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
                 Browse Turfs
               </Link>
               {isAuthenticated ? (
                 <>
-                  <Link to="/dashboard" className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
+                  <Link to="/dashboard" onClick={() => setIsOpen(false)} className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
                     Dashboard
                   </Link>
                   {user?.role === 'ADMIN' && (
-                    <Link to="/admin" className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
+                    <Link to="/admin" onClick={() => setIsOpen(false)} className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
                       Admin
                     </Link>
                   )}
-                  <button onClick={handleLogout} className="text-red-400 hover:text-red-300 w-full text-left block px-3 py-2 rounded-md text-base font-medium">
+                  <button onClick={() => { setIsOpen(false); handleLogout(); }} className="text-red-400 hover:text-red-300 w-full text-left block px-3 py-2 rounded-md text-base font-medium">
                     Log Out
                   </button>
                 </>
               ) : (
                 <>
-                  <Link to="/login" className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
+                  <Link to="/login" onClick={() => setIsOpen(false)} className="text-offwhite hover:text-lime block px-3 py-2 rounded-md text-base font-medium">
                     Log in
                   </Link>
-                  <Link to="/register" className="text-lime font-bold block px-3 py-2 rounded-md text-base">
+                  <Link to="/register" onClick={() => setIsOpen(false)} className="text-lime font-bold block px-3 py-2 rounded-md text-base">
                     Sign Up Free
                   </Link>
                 </>

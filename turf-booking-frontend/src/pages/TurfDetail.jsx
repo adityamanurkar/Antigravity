@@ -32,7 +32,7 @@ const TurfDetail = () => {
   };
 
   // Fetch Turf Details
-  const { data: turf, isLoading: loadingTurf } = useQuery({
+  const { data: turf, isLoading: loadingTurf, error: turfError } = useQuery({
     queryKey: ['turf', id],
     queryFn: async () => {
       const response = await api.get(`/turfs/${id}`);
@@ -104,6 +104,15 @@ const TurfDetail = () => {
   if (loadingTurf) return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="w-12 h-12 border-4 border-lime border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+
+  if (turfError) return (
+    <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="text-red-500 mb-4"><ShieldCheck size={48} /></div>
+      <h2 className="text-2xl font-black mb-2">Turf Not Found</h2>
+      <p className="text-offwhite/60 mb-6">The turf you are looking for does not exist or has been removed.</p>
+      <button onClick={() => navigate('/turfs')} className="btn-primary">Browse Turfs</button>
     </div>
   );
 

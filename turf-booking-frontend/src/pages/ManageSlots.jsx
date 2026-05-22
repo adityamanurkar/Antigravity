@@ -45,7 +45,7 @@ const ManageSlots = () => {
         startDate: data.startDate,
         endDate: data.endDate,
         slotDurationMinutes: parseInt(data.slotDuration),
-        price: parseFloat(data.price || turf.pricePerHour)
+        price: parseFloat(data.price || turf?.pricePerHour || 0)
       });
       return response.data;
     },
@@ -127,7 +127,7 @@ const ManageSlots = () => {
               
               <button 
                 onClick={() => generateMutation.mutate(generateData)}
-                disabled={generateMutation.isPending}
+                disabled={generateMutation.isPending || !turf}
                 className="btn-primary w-full py-4 flex items-center justify-center gap-2"
               >
                 {generateMutation.isPending ? 'GENERATING...' : 'GENERATE SLOTS'}
