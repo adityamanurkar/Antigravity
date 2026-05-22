@@ -5,33 +5,58 @@ const getServerOrigin = () => {
   return apiBase.replace(/\/api\/?$/, '');
 };
 
+/**
+ * Resolves any image URL format from the backend into a fully-qualified URL.
+ *
+ * Handles:
+ *  - Full Cloudinary / external https:// URLs  → returned as-is
+ *  - /api/uploads/filename paths               → prefixed with backend origin
+ *  - api/uploads/filename (no leading slash)   → prefixed with backend origin
+ *  - uploads/filename                          → prefixed with backend origin
+ *  - null / undefined / empty string           → fallback image
+ *  - JSON-stringified arrays e.g. '["url"]'   → first element extracted
+ */
 export const getImageUrl = (url) => {
-  if (!url) {
-    return FALLBACK_TURF_IMAGE_URL;
+  if (!url) return FALLBACK_TURF_IMAGE_URL;
+
+  let trimmed = typeof url === 'string' ? url.trim() : String(url).trim();
+
+  // Handle JSON-stringified arrays stored as a string (e.g. '["http://..."]')
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        trimmed = String(parsed[0]).trim();
+      } else {
+        return FALLBACK_TURF_IMAGE_URL;
+      }
+    } catch {
+      return FALLBACK_TURF_IMAGE_URL;
+    }
   }
 
-  const trimmedUrl = url.trim();
+  if (!trimmed) return FALLBACK_TURF_IMAGE_URL;
 
-  if (trimmedUrl.includes('/api/uploads/')) {
-    const parts = trimmedUrl.split('/api/uploads/');
-    const filename = parts[parts.length - 1];
-    return `${getServerOrigin()}/api/uploads/${filename}`;
+  // Already a fully-qualified URL (Cloudinary, S3, external, etc.)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
   }
 
-  if (trimmedUrl.startsWith('api/uploads/') || trimmedUrl.startsWith('uploads/')) {
-    const filename = trimmedUrl.replace(/^api\/uploads\//, '').replace(/^uploads\//, '');
-    return `${getServerOrigin()}/api/uploads/${filename}`;
+  const origin = getServerOrigin();
+
+  // /api/uploads/... or any absolute path
+  if (trimmed.startsWith('/')) {
+    return `${origin}${trimmed}`;
   }
 
-  if (trimmedUrl.startsWith('http://') || trimmedUrl.startsWith('https://')) {
-    return trimmedUrl;
+  // api/uploads/... or uploads/... (no leading slash)
+  if (trimmed.startsWith('api/uploads/') || trimmed.startsWith('uploads/')) {
+    const filename = trimmed.replace(/^api\/uploads\//, '').replace(/^uploads\//, '');
+    return `${origin}/api/uploads/${filename}`;
   }
 
-  if (trimmedUrl.startsWith('/')) {
-    return `${getServerOrigin()}${trimmedUrl}`;
-  }
-
-  return trimmedUrl;
+  // Bare filename — assume uploads folder
+  return `${origin}/api/uploads/${trimmed}`;
 };
 
 export const handleImageError = (event) => {
