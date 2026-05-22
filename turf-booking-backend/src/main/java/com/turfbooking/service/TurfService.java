@@ -233,6 +233,8 @@ public class TurfService {
                 .status(turf.getStatus())
                 .upiId(turf.getUpiId())
                 .images(images)
+                .averageRating(turf.getAverageRating() != null ? turf.getAverageRating() : 0.0)
+                .reviewCount(turf.getReviewCount() != null ? turf.getReviewCount() : 0)
                 .build();
     }
 }

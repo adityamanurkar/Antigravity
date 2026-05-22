@@ -7,4 +7,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     Page<Review> findByTurfId(Long turfId, Pageable pageable);
+    boolean existsByBookingId(Long bookingId);
 }

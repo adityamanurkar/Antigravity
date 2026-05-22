@@ -17,6 +17,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Page<Booking> findByTurfId(Long turfId, Pageable pageable);
     List<Booking> findByTurfId(Long turfId);
     
+    Page<Booking> findByTurfOwnerId(Long ownerId, Pageable pageable);
+    Page<Booking> findByTurfOwnerIdAndPaymentStatus(Long ownerId, PaymentStatus paymentStatus, Pageable pageable);
+    
     @Query("SELECT b FROM Booking b WHERE b.status = :status AND b.paymentStatus = :paymentStatus AND b.createdAt < :cutoffTime")
     List<Booking> findUnpaidBookingsOlderThan(@Param("status") BookingStatus status, @Param("paymentStatus") PaymentStatus paymentStatus, @Param("cutoffTime") LocalDateTime cutoffTime);
 }

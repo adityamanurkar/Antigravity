@@ -23,4 +23,9 @@ public class BookingDto {
     private BookingStatus status;
     private PaymentStatus paymentStatus;
     private String bookingRef;
+    private String transactionId;
+    private String userName;
+    private String userEmail;
+    private String turfName;
+    private boolean reviewed;
 }

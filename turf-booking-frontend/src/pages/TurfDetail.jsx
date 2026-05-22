@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode, Star, X } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { useAuthStore } from '../store/authStore';
 
@@ -20,6 +20,11 @@ const TurfDetail = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
   const [copied, setCopied] = useState(false);
+  
+  // Reviews & ratings pagination state
+  const [reviewsPage, setReviewsPage] = useState(0);
+  // Conflict modal state
+  const [showConflictModal, setShowConflictModal] = useState(false);
 
   const amenityIcons = {
     'LED Floodlights': <Zap size={18} />,
@@ -41,11 +46,22 @@ const TurfDetail = () => {
   });
 
   // Fetch Available Slots
-  const { data: slots, isLoading: loadingSlots } = useQuery({
+  const { data: slots, isLoading: loadingSlots, refetch: refetchSlots } = useQuery({
     queryKey: ['slots', id, format(selectedDate, 'yyyy-MM-dd')],
     queryFn: async () => {
       const response = await api.get(`/turfs/${id}/slots`, {
         params: { date: format(selectedDate, 'yyyy-MM-dd') }
+      });
+      return response.data;
+    }
+  });
+
+  // Fetch Reviews
+  const { data: reviewsData, isLoading: loadingReviews } = useQuery({
+    queryKey: ['reviews', id, reviewsPage],
+    queryFn: async () => {
+      const response = await api.get(`/reviews/turf/${id}`, {
+        params: { page: reviewsPage, size: 5 }
       });
       return response.data;
     }
@@ -74,7 +90,14 @@ const TurfDetail = () => {
     },
     onError: (err) => {
       setPaymentStep('input');
-      alert(err.response?.data?.message || 'Failed to book slot.');
+      if (err.response?.data?.message === "Slot is not available") {
+        setShowPaymentModal(false);
+        setUtrNumber('');
+        refetchSlots();
+        setShowConflictModal(true);
+      } else {
+        alert(err.response?.data?.message || 'Failed to book slot.');
+      }
     }
   });
 
@@ -155,8 +178,17 @@ const TurfDetail = () => {
           </div>
 
           <div className="space-y-6">
-            <div>
-              <h1 className="text-5xl font-black mb-4">{turf?.name}</h1>
+             <div className="space-y-2">
+              <h1 className="text-5xl font-black flex flex-wrap items-center gap-4">
+                <span>{turf?.name}</span>
+                {turf?.averageRating > 0 && (
+                  <div className="flex items-center gap-1.5 bg-lime/10 border border-lime/20 px-3 py-1 rounded-2xl text-sm text-lime font-black h-fit">
+                    <Star size={16} fill="#C5F135" className="text-lime" />
+                    <span>{turf.averageRating.toFixed(1)}</span>
+                    <span className="text-offwhite/40 font-normal">({turf.reviewCount} {turf.reviewCount === 1 ? 'review' : 'reviews'})</span>
+                  </div>
+                )}
+              </h1>
               <div className="flex items-center gap-2 text-offwhite/60">
                 <MapPin size={18} className="text-lime" />
                 <span>{turf?.address}, {turf?.city}</span>
@@ -225,6 +257,60 @@ const TurfDetail = () => {
                   </button>
                 </div>
               </div>
+            </div>
+
+            {/* Reviews Section */}
+            <div className="glass-card p-8">
+              <h3 className="text-xl font-bold mb-6 italic tracking-tight uppercase flex items-center gap-2">
+                <Star className="text-lime" size={20} fill="#C5F135" /> REVIEWS & RATINGS
+              </h3>
+              
+              {loadingReviews ? (
+                <div className="animate-pulse space-y-4">
+                  {[1, 2].map(i => <div key={i} className="h-20 bg-white/5 rounded-2xl"></div>)}
+                </div>
+              ) : reviewsData?.content?.length > 0 ? (
+                <div className="space-y-4">
+                  {reviewsData.content.map((review) => (
+                    <div key={review.id} className="p-5 bg-white/5 rounded-2xl border border-white/5 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-sm text-offwhite">{review.userName || 'Anonymous'}</p>
+                          <p className="text-[10px] text-offwhite/40">{review.createdAt ? format(new Date(review.createdAt), 'MMMM dd, yyyy') : 'N/A'}</p>
+                        </div>
+                        <div className="flex items-center gap-1 bg-lime/10 px-2 py-0.5 rounded text-lime text-xs font-black">
+                          <Star size={12} fill="#C5F135" className="text-lime" />
+                          <span>{review.rating}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-offwhite/70 leading-relaxed font-medium">{review.comment}</p>
+                    </div>
+                  ))}
+                  
+                  {/* Pagination Controls */}
+                  {reviewsData.totalPages > 1 && (
+                    <div className="flex justify-center items-center gap-4 pt-4">
+                      <button
+                        disabled={reviewsPage === 0}
+                        onClick={() => setReviewsPage(prev => Math.max(0, prev - 1))}
+                        className={`p-2 rounded-xl transition-all ${reviewsPage === 0 ? 'text-white/20 cursor-not-allowed' : 'bg-white/5 text-offwhite hover:bg-lime hover:text-forest'}`}
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <span className="text-xs font-bold text-offwhite/50">Page {reviewsPage + 1} of {reviewsData.totalPages}</span>
+                      <button
+                        disabled={reviewsPage >= reviewsData.totalPages - 1}
+                        onClick={() => setReviewsPage(prev => prev + 1)}
+                        className={`p-2 rounded-xl transition-all ${reviewsPage >= reviewsData.totalPages - 1 ? 'text-white/20 cursor-not-allowed' : 'bg-white/5 text-offwhite hover:bg-lime hover:text-forest'}`}
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-offwhite/40 text-sm text-center py-6">No reviews yet for this turf. Be the first to play and rate!</p>
+              )}
             </div>
           </div>
         </div>
@@ -511,6 +597,76 @@ const TurfDetail = () => {
                <p className="text-offwhite font-bold text-sm leading-tight">Confirmation sent to your inbox.</p>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Slot Conflict Modal */}
+      <AnimatePresence>
+        {showConflictModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowConflictModal(false)}
+              className="absolute inset-0 bg-forest/90 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg glass-card p-8 border-red-500/30 shadow-2xl z-10 bg-forest-dark"
+            >
+              <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-red-500/10 mx-auto">
+                <ShieldCheck size={32} className="rotate-180 text-red-500" />
+              </div>
+              
+              <h3 className="text-2xl font-black text-center mb-2 tracking-tighter">Slot Already Taken!</h3>
+              <p className="text-offwhite/50 text-sm text-center mb-8">
+                Oops! Someone just snatched this slot a split second before you. Don't worry, here are other available times for today:
+              </p>
+
+              <div className="space-y-6">
+                <div className="grid grid-cols-3 gap-3 max-h-[200px] overflow-y-auto pr-1">
+                  {slots?.filter(s => s.status === 'AVAILABLE').length > 0 ? (
+                    slots.filter(s => s.status === 'AVAILABLE').map((slot) => (
+                      <button
+                        key={slot.id}
+                        onClick={() => {
+                          setSelectedSlot(slot.id);
+                          setShowConflictModal(false);
+                          setShowPaymentModal(true);
+                        }}
+                        className="py-3 bg-white/5 border border-white/5 rounded-xl text-sm font-bold text-offwhite hover:border-lime/40 hover:bg-lime/10 hover:text-lime transition-all text-center"
+                      >
+                        {slot.startTime.substring(0, 5)}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-3 py-6 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
+                      <p className="text-offwhite/40 text-sm">No other slots available for today.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={() => setShowConflictModal(false)}
+                    className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm text-offwhite hover:bg-white/10 transition-all text-center"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => setShowConflictModal(false)}
+                className="absolute top-6 right-6 p-2 text-offwhite/50 hover:text-offwhite transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>

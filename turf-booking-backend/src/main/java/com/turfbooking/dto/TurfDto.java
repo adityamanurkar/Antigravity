@@ -32,4 +32,6 @@ public class TurfDto {
     private TurfStatus status;
     private String upiId;
     private List<String> images;
+    private Double averageRating;
+    private Integer reviewCount;
 }

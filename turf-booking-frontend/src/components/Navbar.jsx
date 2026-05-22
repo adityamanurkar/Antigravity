@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import NotificationBell from './NotificationBell';
 import { useAuthStore } from '../store/authStore';
 import api from '../api/axiosConfig';
 import { LogOut, User as UserIcon, Menu, X } from 'lucide-react';
@@ -50,6 +51,7 @@ const Navbar = () => {
                       Admin
                     </Link>
                   )}
+                  <NotificationBell />
                   <div className="flex items-center gap-3 pl-4 border-l border-white/10">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-forest-light border border-lime/30 flex items-center justify-center text-lime">
@@ -113,6 +115,10 @@ const Navbar = () => {
                       Admin
                     </Link>
                   )}
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <NotificationBell />
+                    <span className="text-offwhite text-sm font-medium">Notifications</span>
+                  </div>
                   <button onClick={() => { setIsOpen(false); handleLogout(); }} className="text-red-400 hover:text-red-300 w-full text-left block px-3 py-2 rounded-md text-base font-medium">
                     Log Out
                   </button>

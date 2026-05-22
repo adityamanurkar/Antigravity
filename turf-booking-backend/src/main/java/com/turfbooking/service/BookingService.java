@@ -17,6 +17,7 @@ import com.turfbooking.repository.TimeSlotRepository;
 import com.turfbooking.repository.TurfRepository;
 import com.turfbooking.repository.UserRepository;
 import com.turfbooking.repository.PaymentRepository;
+import com.turfbooking.repository.ReviewRepository;
 import com.turfbooking.entity.Payment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,8 +36,10 @@ public class BookingService {
     private final TurfRepository turfRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final ReviewRepository reviewRepository;
     private final EmailService emailService;
     private final SmsService smsService;
+    private final NotificationService notificationService;
 
     @Transactional
     public BookingDto createBooking(BookingRequest request, Long userId) {
@@ -68,7 +71,7 @@ public class BookingService {
                 .numberOfPlayers(request.getNumberOfPlayers())
                 .totalPrice(turf.getPricePerHour()) // Assuming price is per slot for simplicity
                 .status(BookingStatus.CONFIRMED)
-                .paymentStatus(isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING)
+                .paymentStatus(isPaid ? PaymentStatus.PENDING_VERIFICATION : PaymentStatus.PENDING)
                 .bookingRef(UUID.randomUUID().toString().substring(0, 8).toUpperCase())
                 .build();
 
@@ -80,17 +83,14 @@ public class BookingService {
                 .amount(savedBooking.getTotalPrice())
                 .paymentMethod("UPI")
                 .transactionId(isPaid ? request.getTransactionId().trim() : "PENDING_" + savedBooking.getBookingRef())
-                .status(isPaid ? PaymentStatus.PAID : PaymentStatus.PENDING)
+                .status(isPaid ? PaymentStatus.PENDING_VERIFICATION : PaymentStatus.PENDING)
                 .build();
         paymentRepository.save(payment);
 
         if (isPaid) {
-            // Award loyalty points (Null-safe)
-            int currentPoints = user.getLoyaltyPoints() != null ? user.getLoyaltyPoints() : 0;
-            user.setLoyaltyPoints(currentPoints + 100);
-            userRepository.save(user);
-
-            // Trigger simulated email
+            // Do not award loyalty points yet. Points will be awarded when owner verifies.
+            
+            // Trigger simulated email for pending verification
             emailService.sendBookingConfirmation(
                 user.getEmail(), 
                 user.getName(), 
@@ -113,12 +113,28 @@ public class BookingService {
             }
         }
 
+        // Notify Owner of new booking
+        notificationService.createNotification(
+            turf.getOwner(),
+            "New Booking Recieved",
+            "A new booking has been made for turf " + turf.getName() + " on " + slot.getSlotDate() + " at " + slot.getStartTime() + " by " + user.getName()
+        );
+
         return mapToDto(savedBooking);
     }
 
     @Transactional(readOnly = true)
     public Page<BookingDto> getMyBookings(Long userId, Pageable pageable) {
         return bookingRepository.findByUserId(userId, pageable).map(this::mapToDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<BookingDto> getOwnerBookings(Long ownerId, PaymentStatus paymentStatus, Pageable pageable) {
+        if (paymentStatus != null) {
+            return bookingRepository.findByTurfOwnerIdAndPaymentStatus(ownerId, paymentStatus, pageable).map(this::mapToDto);
+        } else {
+            return bookingRepository.findByTurfOwnerId(ownerId, pageable).map(this::mapToDto);
+        }
     }
 
     @Transactional
@@ -136,6 +152,52 @@ public class BookingService {
         return mapToDto(bookingRepository.save(booking));
     }
 
+    @Transactional
+    public BookingDto verifyPayment(Long bookingId, boolean approved, Long ownerId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+                
+        if (!booking.getTurf().getOwner().getId().equals(ownerId)) {
+            throw new BadRequestException("Not authorized to verify payment for this turf");
+        }
+        
+        Payment payment = paymentRepository.findByBookingId(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment not found"));
+
+        if (approved) {
+            booking.setPaymentStatus(PaymentStatus.PAID);
+            payment.setStatus(PaymentStatus.PAID);
+            
+            // Award loyalty points
+            User user = booking.getUser();
+            int currentPoints = user.getLoyaltyPoints() != null ? user.getLoyaltyPoints() : 0;
+            user.setLoyaltyPoints(currentPoints + 100);
+            userRepository.save(user);
+
+            // Notify player of approval
+            notificationService.createNotification(
+                booking.getUser(),
+                "Payment Approved",
+                "Your payment for booking #" + booking.getBookingRef() + " at " + booking.getTurf().getName() + " has been verified. 100 loyalty points awarded!"
+            );
+        } else {
+            booking.setPaymentStatus(PaymentStatus.FAILED);
+            payment.setStatus(PaymentStatus.FAILED);
+            booking.setStatus(BookingStatus.CANCELLED);
+            booking.getTimeSlot().setStatus(SlotStatus.AVAILABLE);
+
+            // Notify player of rejection
+            notificationService.createNotification(
+                booking.getUser(),
+                "Payment Verification Failed",
+                "Your payment for booking #" + booking.getBookingRef() + " at " + booking.getTurf().getName() + " was rejected. The booking has been cancelled and slot released."
+            );
+        }
+
+        paymentRepository.save(payment);
+        return mapToDto(bookingRepository.save(booking));
+    }
+
     private BookingDto mapToDto(Booking booking) {
         TimeSlotDto slotDto = TimeSlotDto.builder()
                 .id(booking.getTimeSlot().getId())
@@ -146,16 +208,27 @@ public class BookingService {
                 .status(booking.getTimeSlot().getStatus())
                 .build();
 
+        String transactionId = paymentRepository.findByBookingId(booking.getId())
+                .map(Payment::getTransactionId)
+                .orElse(null);
+
+        boolean reviewed = reviewRepository.existsByBookingId(booking.getId());
+
         return BookingDto.builder()
                 .id(booking.getId())
                 .userId(booking.getUser().getId())
+                .userName(booking.getUser().getName())
+                .userEmail(booking.getUser().getEmail())
                 .turfId(booking.getTurf().getId())
+                .turfName(booking.getTurf().getName())
                 .timeSlot(slotDto)
                 .numberOfPlayers(booking.getNumberOfPlayers())
                 .totalPrice(booking.getTotalPrice())
                 .status(booking.getStatus())
                 .paymentStatus(booking.getPaymentStatus())
                 .bookingRef(booking.getBookingRef())
+                .transactionId(transactionId)
+                .reviewed(reviewed)
                 .build();
     }
 }

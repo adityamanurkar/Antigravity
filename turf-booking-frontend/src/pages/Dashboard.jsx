@@ -1,5 +1,5 @@
 import { useAuthStore } from '../store/authStore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { useNavigate, Link } from 'react-router-dom';
@@ -11,7 +11,11 @@ import { useState } from 'react';
 const Dashboard = () => {
   const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [reviewBooking, setReviewBooking] = useState(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
 
   // Sync profile for latest loyalty points
   useQuery({
@@ -33,6 +37,17 @@ const Dashboard = () => {
     enabled: user?.role === 'OWNER',
   });
 
+  const { data: pendingBookings, isLoading: loadingPending, refetch: refetchPending } = useQuery({
+    queryKey: ['pendingBookings'],
+    queryFn: async () => {
+      const response = await api.get('/bookings/owner', {
+        params: { paymentStatus: 'PENDING_VERIFICATION' }
+      });
+      return response.data;
+    },
+    enabled: user?.role === 'OWNER',
+  });
+
   const { data: myBookings, isLoading: loadingBookings, refetch: refetchBookings } = useQuery({
     queryKey: ['myBookings'],
     queryFn: async () => {
@@ -41,6 +56,56 @@ const Dashboard = () => {
     },
     enabled: user?.role === 'PLAYER',
   });
+
+  const verifyPaymentMutation = useMutation({
+    mutationFn: async ({ bookingId, approved }) => {
+      const response = await api.post(`/bookings/${bookingId}/verify`, null, {
+        params: { approved }
+      });
+      return response.data;
+    },
+    onSuccess: (_, variables) => {
+      alert(`Booking ${variables.approved ? 'approved' : 'rejected'} successfully.`);
+      refetchPending();
+      queryClient.invalidateQueries(['profile']);
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to verify payment.');
+    }
+  });
+
+  const handleVerifyPayment = (bookingId, approved) => {
+    const action = approved ? 'approve' : 'reject';
+    if (window.confirm(`Are you sure you want to ${action} this booking payment?`)) {
+      verifyPaymentMutation.mutate({ bookingId, approved });
+    }
+  };
+
+  const submitReviewMutation = useMutation({
+    mutationFn: async ({ bookingId, rating, comment }) => {
+      const response = await api.post('/reviews', { bookingId, rating, comment });
+      return response.data;
+    },
+    onSuccess: () => {
+      alert('Thank you! Your review has been submitted successfully.');
+      setReviewBooking(null);
+      setRating(5);
+      setComment('');
+      refetchBookings();
+    },
+    onError: (err) => {
+      alert(err.response?.data?.message || 'Failed to submit review.');
+    }
+  });
+
+  const handleSubmitReview = () => {
+    if (!reviewBooking) return;
+    submitReviewMutation.mutate({
+      bookingId: reviewBooking.id,
+      rating,
+      comment
+    });
+  };
 
   const handleCancelBooking = async (bookingId) => {
     if (window.confirm('Are you sure you want to cancel this booking?')) {
@@ -131,7 +196,60 @@ const Dashboard = () => {
                   <p className="text-3xl font-black text-lime mt-2">${ownerStats.averagePrice}</p>
                 </div>
               </div>
-              <h3 className="text-xl font-bold flex items-center gap-2">
+
+              {/* Pending Payment Verifications */}
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold flex items-center gap-2 mt-8">
+                  <CircleDollarSign className="text-lime" size={20} /> Pending Payment Verifications
+                </h3>
+                {loadingPending ? (
+                  <div className="animate-pulse space-y-4">
+                    {[1, 2].map(i => <div key={i} className="h-24 bg-white/5 rounded-2xl"></div>)}
+                  </div>
+                ) : pendingBookings?.content?.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {pendingBookings.content.map((booking) => (
+                      <div key={booking.id} className="glass-card p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-lime/40 transition-all">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lime font-bold text-sm bg-lime/10 px-2 py-0.5 rounded">UTR: {booking.transactionId || 'N/A'}</span>
+                            <span className="text-offwhite/60 text-xs">
+                              {booking.timeSlot?.slotDate ? format(new Date(booking.timeSlot.slotDate), 'MMM dd, yyyy') : 'N/A'} | {booking.timeSlot?.startTime?.substring(0, 5)} - {booking.timeSlot?.endTime?.substring(0, 5)}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-lg text-offwhite">{booking.turfName || 'Turf'}</h4>
+                          <div className="text-sm text-offwhite/50 space-y-0.5">
+                            <p>Player: <span className="text-offwhite font-medium">{booking.userName || 'Unknown'}</span> ({booking.userEmail || 'N/A'})</p>
+                            <p className="text-xs text-offwhite/40">Ref: #{booking.bookingRef} | Price: <span className="text-lime font-black">${booking.totalPrice}</span></p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 self-end sm:self-center">
+                          <button
+                            onClick={() => handleVerifyPayment(booking.id, true)}
+                            disabled={verifyPaymentMutation.isLoading}
+                            className="px-4 py-2 bg-lime text-forest font-black rounded-xl hover:bg-lime/80 text-xs transition-all shadow-md shadow-lime/10"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleVerifyPayment(booking.id, false)}
+                            disabled={verifyPaymentMutation.isLoading}
+                            className="px-4 py-2 bg-red-500/20 text-red-400 font-bold border border-red-500/30 rounded-xl hover:bg-red-500 hover:text-white text-xs transition-all"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="glass-card p-6 text-center border-dashed py-8">
+                    <p className="text-offwhite/40 text-sm font-medium">No pending payment verifications at the moment.</p>
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-xl font-bold flex items-center gap-2 pt-6">
                 <Calendar className="text-lime" size={20} /> My Registered Turfs
               </h3>
               
@@ -240,6 +358,14 @@ const Dashboard = () => {
                            <p className="text-xs text-offwhite/40 font-bold uppercase tracking-widest">Total</p>
                            <p className="font-black text-lime">${booking.totalPrice}</p>
                         </div>
+                        {booking.paymentStatus === 'PAID' && !booking.reviewed && (
+                          <button
+                            onClick={() => setReviewBooking(booking)}
+                            className="px-3 py-2 bg-lime/10 border border-lime/30 text-lime rounded-xl hover:bg-lime hover:text-forest font-bold text-xs transition-all"
+                          >
+                            Leave a Review
+                          </button>
+                        )}
                         {booking.status === 'CONFIRMED' && (
                           <button 
                             onClick={(e) => {
@@ -371,6 +497,94 @@ const Dashboard = () => {
                >
                 <X size={20} />
                </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Review Modal */}
+      <AnimatePresence>
+        {reviewBooking && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setReviewBooking(null);
+                setRating(5);
+                setComment('');
+              }}
+              className="absolute inset-0 bg-forest/90 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md glass-card p-8 border-lime/30 shadow-2xl z-10 bg-forest-dark"
+            >
+              <h3 className="text-2xl font-black mb-1">Rate Your Experience</h3>
+              <p className="text-offwhite/50 text-sm mb-6">How was your time at <span className="text-lime font-bold">{reviewBooking.turfName || 'the turf'}</span>?</p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-black text-offwhite/40 uppercase tracking-widest block mb-2">Rating</label>
+                  <div className="flex items-center gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className="text-lime hover:scale-110 transition-transform"
+                      >
+                        <Star size={32} fill={star <= rating ? '#C5F135' : 'none'} className="text-lime" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-black text-offwhite/40 uppercase tracking-widest block mb-2">Your Review</label>
+                  <textarea
+                    rows={4}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Share your thoughts on the turf quality, amenities, and overall experience..."
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-offwhite placeholder:text-offwhite/30 focus:outline-none focus:border-lime transition-all resize-none text-sm"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setReviewBooking(null);
+                      setRating(5);
+                      setComment('');
+                    }}
+                    className="flex-1 py-3 border border-white/15 hover:bg-white/5 rounded-xl font-bold text-sm transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSubmitReview}
+                    disabled={submitReviewMutation.isLoading}
+                    className="flex-1 py-3 bg-lime text-forest font-black rounded-xl hover:bg-lime/95 text-sm transition-all shadow-lg shadow-lime/25"
+                  >
+                    {submitReviewMutation.isLoading ? 'Submitting...' : 'Submit Review'}
+                  </button>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setReviewBooking(null);
+                  setRating(5);
+                  setComment('');
+                }}
+                className="absolute top-6 right-6 p-2 text-offwhite/50 hover:text-offwhite transition-colors"
+              >
+                <X size={20} />
+              </button>
             </motion.div>
           </div>
         )}

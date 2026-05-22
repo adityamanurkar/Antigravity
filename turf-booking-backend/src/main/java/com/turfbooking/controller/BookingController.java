@@ -4,10 +4,12 @@ import com.turfbooking.dto.BookingDto;
 import com.turfbooking.dto.BookingRequest;
 import com.turfbooking.security.UserDetailsImpl;
 import com.turfbooking.service.BookingService;
+import com.turfbooking.entity.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,10 +35,29 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getMyBookings(userDetails.getId(), PageRequest.of(page, size)));
     }
 
+    @PreAuthorize("hasRole('OWNER')")
+    @GetMapping("/owner")
+    public ResponseEntity<Page<BookingDto>> getOwnerBookings(
+            @AuthenticationPrincipal UserDetailsImpl userDetails,
+            @RequestParam(required = false) PaymentStatus paymentStatus,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(bookingService.getOwnerBookings(userDetails.getId(), paymentStatus, PageRequest.of(page, size)));
+    }
+
     @PutMapping("/{id}/cancel")
     public ResponseEntity<BookingDto> cancelBooking(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         return ResponseEntity.ok(bookingService.cancelBooking(id, userDetails.getId()));
+    }
+
+    @PreAuthorize("hasRole('OWNER')")
+    @PostMapping("/{id}/verify")
+    public ResponseEntity<BookingDto> verifyPayment(
+            @PathVariable Long id,
+            @RequestParam boolean approved,
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return ResponseEntity.ok(bookingService.verifyPayment(id, approved, userDetails.getId()));
     }
 }
