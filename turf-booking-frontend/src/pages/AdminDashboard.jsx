@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Clock, Shield, Users, XCircle, Ban, Ticket, CalendarX2 } from 'lucide-react';
+import { CheckCircle, Clock, Shield, Users, Ban, Ticket, CalendarX2 } from 'lucide-react';
 import { useState } from 'react';
 import api from '../api/axiosConfig';
 

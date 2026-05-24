@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, Star, ArrowRight, Radar } from 'lucide-react';
@@ -13,6 +13,7 @@ const TurfListing = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedAmenities, setSelectedAmenities] = useState([]);
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('recommended');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['turfs', searchTerm, selectedSport, priceRange.min, priceRange.max, selectedDate, selectedAmenities],
@@ -32,6 +33,15 @@ const TurfListing = () => {
   });
 
   const filteredTurfs = data;
+
+  const sortedTurfs = useMemo(() => {
+    if (!filteredTurfs) return [];
+    let turfs = [...filteredTurfs];
+    if (sortBy === 'price_asc') turfs.sort((a, b) => a.pricePerHour - b.pricePerHour);
+    else if (sortBy === 'price_desc') turfs.sort((a, b) => b.pricePerHour - a.pricePerHour);
+    else if (sortBy === 'rating') turfs.sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+    return turfs;
+  }, [filteredTurfs, sortBy]);
 
   const sports = ['Football', 'Cricket', 'Basketball', 'Tennis', 'Badminton', 'Pickleball'];
   const amenities = ['LED Floodlights', 'Parking', 'Changing Rooms', 'Drinking Water', 'Washrooms', 'First Aid', 'CCTV'];
@@ -119,6 +129,19 @@ const TurfListing = () => {
             {sport}
           </button>
         ))}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-offwhite/40 text-xs font-bold uppercase tracking-widest">Sort by</span>
+          <select 
+            value={sortBy} 
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-forest-light border border-white/10 text-offwhite rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-lime"
+          >
+            <option value="recommended">Recommended</option>
+            <option value="rating">Highest Rated</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -150,7 +173,7 @@ const TurfListing = () => {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-bold text-offwhite/60 uppercase tracking-wider">Price Range ($/hr)</label>
+              <label className="text-xs font-bold text-offwhite/60 uppercase tracking-wider">Price Range (₹/hr)</label>
               <div className="flex items-center gap-2">
                 <input 
                   type="number" 
@@ -208,7 +231,7 @@ const TurfListing = () => {
             <div className="text-center py-20">
               <p className="text-red-400">Failed to load turfs. Please try again later.</p>
             </div>
-          ) : filteredTurfs?.length === 0 ? (
+          ) : sortedTurfs?.length === 0 ? (
             <div className="text-center py-20">
               <div className="w-20 h-20 bg-forest-light rounded-full flex items-center justify-center mx-auto mb-6 text-offwhite/30">
                 <Search size={32} />
@@ -218,13 +241,14 @@ const TurfListing = () => {
             </div>
           ) : (
             <div className={`grid grid-cols-1 md:grid-cols-2 ${showFilters ? 'lg:grid-cols-2 xl:grid-cols-3' : 'lg:grid-cols-3'} gap-8`}>
-          {filteredTurfs?.map(turf => (
+          {sortedTurfs?.map(turf => (
             <div key={turf.id} className="glass-card flex flex-col h-full group">
               <div className="relative h-60 overflow-hidden">
                 <img 
                   src={getImageUrl(turf.images?.[0])} 
                   alt={turf.name} 
                   onError={handleImageError}
+                  loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute bottom-4 left-4 flex gap-2">
@@ -239,10 +263,12 @@ const TurfListing = () => {
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-xl font-bold group-hover:text-lime transition-colors">{turf.name}</h3>
-                  <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-xs font-bold">
-                    <Star size={14} className="fill-lime text-lime" />
-                    <span>4.8</span>
-                  </div>
+                  {turf.averageRating > 0 && (
+                    <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-xs font-bold">
+                      <Star size={14} className="fill-lime text-lime" />
+                      <span>{turf.averageRating.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center gap-2 text-offwhite/50 text-sm mb-6">

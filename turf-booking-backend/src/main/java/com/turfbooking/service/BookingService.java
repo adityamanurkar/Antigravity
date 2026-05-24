@@ -64,12 +64,17 @@ public class BookingService {
 
         boolean isPaid = request.getTransactionId() != null && !request.getTransactionId().trim().isEmpty();
 
+        long durationMinutes = java.time.temporal.ChronoUnit.MINUTES.between(slot.getStartTime(), slot.getEndTime());
+        java.math.BigDecimal calculatedPrice = turf.getPricePerHour()
+                .multiply(java.math.BigDecimal.valueOf(durationMinutes))
+                .divide(java.math.BigDecimal.valueOf(60), 2, java.math.RoundingMode.HALF_UP);
+
         Booking booking = Booking.builder()
                 .user(user)
                 .turf(turf)
                 .timeSlot(slot)
                 .numberOfPlayers(request.getNumberOfPlayers())
-                .totalPrice(turf.getPricePerHour()) // Assuming price is per slot for simplicity
+                .totalPrice(calculatedPrice)
                 .status(BookingStatus.CONFIRMED)
                 .paymentStatus(isPaid ? PaymentStatus.PENDING_VERIFICATION : PaymentStatus.PENDING)
                 .bookingRef(UUID.randomUUID().toString().substring(0, 8).toUpperCase())

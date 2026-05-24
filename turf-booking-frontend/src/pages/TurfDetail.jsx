@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, DollarSign, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode, Star, X } from 'lucide-react';
+import { MapPin, Clock, IndianRupee, Calendar as CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, ShieldCheck, Mail, Zap, Car, DoorOpen, Droplets, Bath, Activity, Video, Copy, Smartphone, QrCode, Star, X } from 'lucide-react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { useAuthStore } from '../store/authStore';
 
@@ -15,11 +15,7 @@ const TurfDetail = () => {
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()));
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentStep, setPaymentStep] = useState('input'); // 'input' | 'processing' | 'success'
   const [showNotification, setShowNotification] = useState(false);
-  const [utrNumber, setUtrNumber] = useState('');
-  const [copied, setCopied] = useState(false);
   
   // Reviews & ratings pagination state
   const [reviewsPage, setReviewsPage] = useState(0);
@@ -67,50 +63,95 @@ const TurfDetail = () => {
     }
   });
 
-  // Booking Mutation
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  // Booking Mutation for Razorpay
   const bookingMutation = useMutation({
-    mutationFn: async ({ slotId, transactionId }) => {
-      const response = await api.post('/bookings', { 
+    mutationFn: async ({ slotId }) => {
+      // 1. Create booking
+      const bookingRes = await api.post('/bookings', { 
         slotId,
         turfId: parseInt(id),
         numberOfPlayers: 1,
-        transactionId
+        transactionId: 'RAZORPAY_PENDING'
       });
-      return response.data;
+      const booking = bookingRes.data;
+
+      // 2. Load Razorpay script
+      const res = await loadRazorpayScript();
+      if (!res) throw new Error('Razorpay SDK failed to load');
+
+      // 3. Create Order
+      const orderRes = await api.post('/payments/create-order', { bookingId: booking.id });
+      return { order: orderRes.data, bookingId: booking.id };
     },
-    onSuccess: () => {
-      setShowPaymentModal(false);
-      setPaymentStep('input');
-      setUtrNumber('');
-      setShowNotification(true);
-      setTimeout(() => {
-        setShowNotification(false);
-        navigate('/dashboard');
-      }, 500);
+    onSuccess: (data) => {
+      const options = {
+        key: data.order.key,
+        amount: data.order.amount,
+        currency: data.order.currency,
+        name: turf?.name || "Turfiez",
+        description: `Booking for ${format(selectedDate, 'MMM dd, yyyy')} at ${selectedSlotData?.startTime.substring(0,5)}`,
+        order_id: data.order.orderId,
+        handler: async function (response) {
+          try {
+            await api.post('/payments/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              bookingId: data.bookingId
+            });
+            setShowNotification(true);
+            setTimeout(() => {
+              setShowNotification(false);
+              navigate('/dashboard');
+            }, 2000);
+          } catch (err) {
+            alert('Payment verification failed');
+          }
+        },
+        theme: {
+          color: "#C5F135" // Lime color
+        }
+      };
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.on('payment.failed', function () {
+        alert('Payment failed! Please try again.');
+      });
+      paymentObject.open();
     },
     onError: (err) => {
-      setPaymentStep('input');
       if (err.response?.data?.message === "Slot is not available") {
-        setShowPaymentModal(false);
-        setUtrNumber('');
         refetchSlots();
         setShowConflictModal(true);
       } else {
-        alert(err.response?.data?.message || 'Failed to book slot.');
+        alert(err.response?.data?.message || err.message || 'Failed to process payment.');
       }
     }
   });
 
-  const upiId = turf?.upiId || 'turfiez@okaxis';
-  const upiAmount = turf?.pricePerHour || 0;
-  const upiUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(turf?.name || 'Turfiez')}&am=${upiAmount}&cu=INR&tn=Booking-${turf?.name || 'Turf'}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUrl)}`;
+  const selectedSlotData = slots?.find(s => s.id === selectedSlot);
+  
+  let finalPrice = turf?.pricePerHour || 0;
+  if (selectedSlotData && turf?.pricePerHour) {
+    const startParts = selectedSlotData.startTime.split(':').map(Number);
+    const endParts = selectedSlotData.endTime.split(':').map(Number);
+    const startMins = startParts[0] * 60 + startParts[1];
+    const endMins = endParts[0] * 60 + endParts[1];
+    let durationMins = endMins - startMins;
+    if (durationMins < 0) durationMins += 24 * 60;
+    finalPrice = Number(((turf.pricePerHour * durationMins) / 60).toFixed(2));
+  }
 
-  const copyUpiId = () => {
-    navigator.clipboard.writeText(upiId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  // Removed manual UPI properties
 
   const nextImage = () => {
     if (turf?.images?.length) {
@@ -198,7 +239,7 @@ const TurfDetail = () => {
             <div className="flex gap-4">
               <div className="glass-card flex-1 p-4 flex items-center gap-4">
                 <div className="w-12 h-12 bg-lime/10 rounded-xl flex items-center justify-center text-lime">
-                  <DollarSign size={24} />
+                  <IndianRupee size={24} />
                 </div>
                 <div>
                   <p className="text-offwhite/40 text-xs font-bold uppercase tracking-widest">Price</p>
@@ -397,13 +438,13 @@ const TurfDetail = () => {
 
             {/* Booking Summary & Action */}
             <div className="space-y-6 pt-6 border-t border-white/10">
-              {selectedSlot && (
+              {selectedSlotData && (
                 <div className="flex justify-between items-center p-4 bg-lime/10 rounded-2xl border border-lime/20">
                   <div className="flex items-center gap-3 text-lime">
                     <CheckCircle size={20} />
-                    <span className="font-bold">Slot Selected</span>
+                    <span className="font-bold">Slot Selected ({selectedSlotData.startTime.substring(0,5)} - {selectedSlotData.endTime.substring(0,5)})</span>
                   </div>
-                  <span className="text-offwhite font-black">₹{turf?.pricePerHour}</span>
+                  <span className="text-offwhite font-black">₹{finalPrice}</span>
                 </div>
               )}
 
@@ -423,14 +464,14 @@ const TurfDetail = () => {
               ) : (
                 <button
                   disabled={!selectedSlot || bookingMutation.isPending}
-                  onClick={() => setShowPaymentModal(true)}
+                  onClick={() => bookingMutation.mutate({ slotId: selectedSlot })}
                   className={`w-full py-4 rounded-2xl text-lg font-black transition-all ${
                     !selectedSlot 
                       ? 'bg-white/5 text-offwhite/20 cursor-not-allowed' 
                       : 'bg-lime text-forest hover:scale-[1.02] active:scale-95 shadow-xl shadow-lime/20'
                   }`}
                 >
-                  {bookingMutation.isPending ? 'PROCESSING...' : 'PROCEED TO PAY'}
+                  {bookingMutation.isPending ? 'CONNECTING TO RAZORPAY...' : 'PROCEED TO PAY'}
                 </button>
               )}
               
@@ -442,143 +483,7 @@ const TurfDetail = () => {
         </div>
       </div>
 
-      {/* UPI Payment Modal */}
-      <AnimatePresence>
-        {showPaymentModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => !bookingMutation.isPending && (setShowPaymentModal(false), setPaymentStep('input'), setUtrNumber(''))}
-              className="absolute inset-0 bg-forest/90 backdrop-blur-md"
-            />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md glass-card p-8 border-lime/30 overflow-hidden max-h-[90vh] overflow-y-auto"
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-lime/20">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: paymentStep === 'processing' ? '100%' : '0%' }}
-                  transition={{ duration: 2 }}
-                  className="h-full bg-lime shadow-[0_0_10px_#C5F135]"
-                />
-              </div>
-
-              {paymentStep === 'input' && (
-                <div className="space-y-5">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-black">UPI CHECKOUT</h3>
-                    <div className="bg-lime/10 p-2 rounded-lg text-lime">
-                      <QrCode size={20} />
-                    </div>
-                  </div>
-
-                  {/* Price Summary */}
-                  <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-offwhite/50">Turf Fee</span>
-                      <span className="text-offwhite font-bold">₹{turf?.pricePerHour}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-offwhite/50">Platform Fee</span>
-                      <span className="text-lime font-bold">₹0.00</span>
-                    </div>
-                    <div className="h-px bg-white/10 my-2" />
-                    <div className="flex justify-between text-lg">
-                      <span className="font-bold">Total Payable</span>
-                      <span className="text-lime font-black">₹{turf?.pricePerHour}</span>
-                    </div>
-                  </div>
-
-                  {/* QR Code */}
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="bg-white p-3 rounded-2xl shadow-xl shadow-lime/10">
-                      <img src={qrCodeUrl} alt="UPI QR Code" className="w-[200px] h-[200px]" />
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-offwhite/50 font-bold uppercase tracking-widest">
-                      <Smartphone size={12} /> Scan with GPay, PhonePe, Paytm or BHIM
-                    </div>
-                  </div>
-
-                  {/* Copyable UPI ID */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-offwhite/40 uppercase">Or Pay Manually to UPI ID</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text" 
-                        value={upiId} 
-                        readOnly 
-                        className="input-field w-full text-lime font-bold" 
-                      />
-                      <button 
-                        onClick={copyUpiId}
-                        className={`px-4 rounded-xl border transition-all font-bold text-xs flex items-center gap-1.5 ${
-                          copied 
-                            ? 'bg-lime/20 border-lime/40 text-lime' 
-                            : 'border-white/10 text-offwhite/60 hover:border-lime/30 hover:text-lime'
-                        }`}
-                      >
-                        <Copy size={14} />
-                        {copied ? 'Copied!' : 'Copy'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* UTR Input */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-offwhite/40 uppercase">UPI Transaction ID (UTR Number)</label>
-                    <input 
-                      type="text" 
-                      value={utrNumber} 
-                      onChange={(e) => setUtrNumber(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 22))}
-                      className="input-field w-full" 
-                      placeholder="Enter 12-digit UTR after payment" 
-                    />
-                    <p className="text-[9px] text-offwhite/30 font-bold uppercase">
-                      Find your UTR in GPay → Activity → Transaction Details
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-[10px] text-offwhite/40 font-bold uppercase tracking-widest justify-center">
-                    <ShieldCheck size={14} className="text-lime" /> Zero Fees · Direct to Owner
-                  </div>
-
-                  <button
-                    disabled={utrNumber.trim().length < 8}
-                    onClick={() => {
-                      setPaymentStep('processing');
-                      setTimeout(() => {
-                        bookingMutation.mutate({ slotId: selectedSlot, transactionId: utrNumber.trim() });
-                      }, 500);
-                    }}
-                    className={`w-full py-4 rounded-2xl text-lg font-black transition-all ${
-                      utrNumber.trim().length < 8
-                        ? 'bg-white/5 text-offwhite/20 cursor-not-allowed'
-                        : 'bg-lime text-forest hover:scale-[1.02] active:scale-95 shadow-xl shadow-lime/20'
-                    }`}
-                  >
-                    CONFIRM PAYMENT
-                  </button>
-                </div>
-              )}
-
-              {paymentStep === 'processing' && (
-                <div className="py-20 text-center space-y-6">
-                  <div className="w-20 h-20 border-4 border-lime border-t-transparent rounded-full animate-spin mx-auto" />
-                  <div>
-                    <h3 className="text-2xl font-black mb-2 tracking-tighter">VERIFYING PAYMENT</h3>
-                    <p className="text-offwhite/50 text-sm">Confirming your UPI transaction... Please wait.</p>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Manual UPI Modal Removed */}
 
       {/* Notification Toast */}
       <AnimatePresence>
@@ -635,7 +540,7 @@ const TurfDetail = () => {
                         onClick={() => {
                           setSelectedSlot(slot.id);
                           setShowConflictModal(false);
-                          setShowPaymentModal(true);
+                          bookingMutation.mutate({ slotId: slot.id });
                         }}
                         className="py-3 bg-white/5 border border-white/5 rounded-xl text-sm font-bold text-offwhite hover:border-lime/40 hover:bg-lime/10 hover:text-lime transition-all text-center"
                       >

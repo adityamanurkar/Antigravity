@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
-import { ArrowLeft, MapPin, Clock, DollarSign, Upload, X, Loader2, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, IndianRupee, Upload, X, Loader2, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AddTurf = () => {
@@ -190,7 +190,7 @@ const AddTurf = () => {
             <div className="space-y-2">
               <label className="text-sm font-bold text-offwhite/80">Price Per Hour (₹)</label>
               <div className="relative">
-                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-offwhite/40" size={18} />
+                <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 text-offwhite/40" size={18} />
                 <input required type="number" name="pricePerHour" value={formData.pricePerHour} onChange={handleChange} className="input-field w-full pl-11" placeholder="50" />
               </div>
             </div>

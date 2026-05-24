@@ -9,7 +9,11 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.EntityGraph;
+
 public interface TurfRepository extends JpaRepository<Turf, Long>, JpaSpecificationExecutor<Turf> {
     List<Turf> findByOwnerId(Long ownerId);
+
+    @EntityGraph(attributePaths = {"images"})
     Page<Turf> findByStatus(TurfStatus status, Pageable pageable);
 }

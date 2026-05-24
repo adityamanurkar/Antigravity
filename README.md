@@ -32,7 +32,7 @@ docker-compose up --build
 3. Run the Spring Boot application:
 ```bash
 cd turf-booking-backend
-./mvnw spring-boot:run
+mvn spring-boot:run
 ```
 
 ### Frontend

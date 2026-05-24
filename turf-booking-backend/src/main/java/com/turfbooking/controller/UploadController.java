@@ -62,7 +62,7 @@ public class UploadController {
             throw new BadRequestException("Image file is required");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new BadRequestException("Image file must be 5MB or smaller");
+            throw new BadRequestException("Image file must be 10MB or smaller");
         }
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {

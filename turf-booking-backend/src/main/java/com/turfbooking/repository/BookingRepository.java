@@ -22,4 +22,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     
     @Query("SELECT b FROM Booking b WHERE b.status = :status AND b.paymentStatus = :paymentStatus AND b.createdAt < :cutoffTime")
     List<Booking> findUnpaidBookingsOlderThan(@Param("status") BookingStatus status, @Param("paymentStatus") PaymentStatus paymentStatus, @Param("cutoffTime") LocalDateTime cutoffTime);
+
+    @Query("SELECT b FROM Booking b WHERE b.status = 'CONFIRMED' AND b.paymentStatus = 'PAID' AND b.timeSlot.slotDate = CURRENT_DATE AND b.timeSlot.endTime < :timeThreshold AND NOT EXISTS (SELECT r FROM Review r WHERE r.booking = b)")
+    List<Booking> findCompletedUnreviewedBookings(@Param("timeThreshold") java.time.LocalTime timeThreshold);
 }

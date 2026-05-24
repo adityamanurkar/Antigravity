@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import { getImageUrl, handleImageError } from '../utils/imageUtils';
 import { useNavigate, Link } from 'react-router-dom';
-import { Plus, MapPin, Calendar, Clock, ChevronRight, Settings, Ticket, X, Download, Star, Pencil, BadgeCheck, CircleDollarSign } from 'lucide-react';
+import { Plus, MapPin, Calendar, Clock, ChevronRight, Settings, Ticket, X, Download, Star, Pencil, BadgeCheck, IndianRupee, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState } from 'react';
 
 const Dashboard = () => {
@@ -42,6 +43,17 @@ const Dashboard = () => {
     queryFn: async () => {
       const response = await api.get('/bookings/owner', {
         params: { paymentStatus: 'PENDING_VERIFICATION' }
+      });
+      return response.data;
+    },
+    enabled: user?.role === 'OWNER',
+  });
+
+  const { data: allOwnerBookings } = useQuery({
+    queryKey: ['allOwnerBookings'],
+    queryFn: async () => {
+      const response = await api.get('/bookings/owner', {
+        params: { size: 100 }
       });
       return response.data;
     },
@@ -128,6 +140,34 @@ const Dashboard = () => {
       : 0,
   };
 
+  const generateChartData = () => {
+    if (!allOwnerBookings?.content) return [];
+    
+    const last7Days = Array.from({ length: 7 }).map((_, i) => {
+      const d = subDays(new Date(), 6 - i);
+      return format(d, 'MMM dd');
+    });
+
+    const dataMap = last7Days.reduce((acc, dateStr) => {
+      acc[dateStr] = { name: dateStr, revenue: 0, bookings: 0 };
+      return acc;
+    }, {});
+
+    allOwnerBookings.content.forEach(booking => {
+      if (booking.status === 'CONFIRMED' && booking.timeSlot?.slotDate) {
+        const dateStr = format(new Date(booking.timeSlot.slotDate), 'MMM dd');
+        if (dataMap[dateStr]) {
+          dataMap[dateStr].revenue += booking.totalPrice || 0;
+          dataMap[dateStr].bookings += 1;
+        }
+      }
+    });
+
+    return Object.values(dataMap);
+  };
+  
+  const chartData = generateChartData();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex justify-between items-end mb-10">
@@ -197,10 +237,42 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* Revenue Chart */}
+              <div className="glass-card p-6 mt-6">
+                <h3 className="text-xl font-bold flex items-center gap-2 mb-6">
+                  <Activity className="text-lime" size={20} /> Revenue Analytics (7 Days)
+                </h3>
+                <div className="h-[300px] w-full">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#C5F135" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#C5F135" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="name" stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} />
+                        <YAxis stroke="#ffffff40" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#1A2113', borderColor: '#ffffff20', borderRadius: '1rem' }}
+                          itemStyle={{ color: '#C5F135', fontWeight: 'bold' }}
+                        />
+                        <Area type="monotone" dataKey="revenue" stroke="#C5F135" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-offwhite/40 text-sm">
+                      No data available yet
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Pending Payment Verifications */}
               <div className="space-y-4">
                 <h3 className="text-xl font-bold flex items-center gap-2 mt-8">
-                  <CircleDollarSign className="text-lime" size={20} /> Pending Payment Verifications
+                  <IndianRupee className="text-lime" size={20} /> Pending Payment Verifications
                 </h3>
                 {loadingPending ? (
                   <div className="animate-pulse space-y-4">
@@ -324,7 +396,7 @@ const Dashboard = () => {
                   </div>
                   <div className="glass-card p-5">
                     <p className="text-xs font-black text-offwhite/40 uppercase tracking-widest">Paid</p>
-                    <p className="text-3xl font-black text-lime mt-2 flex items-center gap-2"><CircleDollarSign />{myBookings.content.filter(booking => booking.paymentStatus === 'PAID').length}</p>
+                    <p className="text-3xl font-black text-lime mt-2 flex items-center gap-2"><IndianRupee size={30} />{myBookings.content.filter(booking => booking.paymentStatus === 'PAID').length}</p>
                   </div>
                 </div>
               )}
