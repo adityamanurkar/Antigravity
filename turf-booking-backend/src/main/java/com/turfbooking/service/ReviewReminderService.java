@@ -32,11 +32,10 @@ public class ReviewReminderService {
         
         for (Booking booking : unreviewedBookings) {
             log.info("Sending review reminder to user {} for booking {}", booking.getUser().getEmail(), booking.getId());
-            notificationService.sendNotification(
+            notificationService.createNotification(
                     booking.getUser(),
                     "Rate Your Experience!",
-                    "Hope you enjoyed your game at " + booking.getTurf().getName() + "! Please take a moment to leave a review and let others know how it was.",
-                    "REVIEW_REMINDER"
+                    "Hope you enjoyed your game at " + booking.getTurf().getName() + "! Please take a moment to leave a review and let others know how it was."
             );
         }
         
