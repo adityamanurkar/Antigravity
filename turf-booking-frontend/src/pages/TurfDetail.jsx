@@ -94,6 +94,23 @@ const TurfDetail = () => {
       return { order: orderRes.data, bookingId: booking.id };
     },
     onSuccess: (data) => {
+      if (data.order.key === 'rzp_test_YourTestKeyId') {
+        alert("Mock Mode: Simulating successful Razorpay payment! (Add real keys in application.yml to see the official Razorpay Modal)");
+        api.post('/payments/verify', {
+          razorpay_order_id: data.order.orderId,
+          razorpay_payment_id: "pay_mock123",
+          razorpay_signature: "mock_signature",
+          bookingId: data.bookingId
+        }).then(() => {
+          setShowNotification(true);
+          setTimeout(() => {
+            setShowNotification(false);
+            navigate('/dashboard');
+          }, 2000);
+        }).catch(() => alert('Payment verification failed'));
+        return;
+      }
+
       const options = {
         key: data.order.key,
         amount: data.order.amount,

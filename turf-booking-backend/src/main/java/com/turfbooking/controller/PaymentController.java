@@ -43,6 +43,15 @@ public class PaymentController {
             if (!booking.getUser().getId().equals(userDetails.getId())) {
                 return ResponseEntity.status(403).build();
             }
+            if ("your_test_key_secret".equals(razorpayKeySecret) || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
+                // MOCK MODE
+                Map<String, Object> response = new HashMap<>();
+                response.put("orderId", "order_mock_" + booking.getId());
+                response.put("amount", booking.getTotalPrice().multiply(java.math.BigDecimal.valueOf(100)).intValue());
+                response.put("currency", "INR");
+                response.put("key", "rzp_test_YourTestKeyId");
+                return ResponseEntity.ok(response);
+            }
 
             RazorpayClient razorpay = new RazorpayClient(razorpayKeyId, razorpayKeySecret);
 
@@ -86,6 +95,15 @@ public class PaymentController {
         }
 
         try {
+            if ("your_test_key_secret".equals(razorpayKeySecret) || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
+                booking.setPaymentStatus(PaymentStatus.PAID);
+                bookingRepository.save(booking);
+
+                Map<String, String> response = new HashMap<>();
+                response.put("status", "success");
+                return ResponseEntity.ok(response);
+            }
+
             // Verify signature
             String payload = razorpayOrderId + "|" + razorpayPaymentId;
             javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
