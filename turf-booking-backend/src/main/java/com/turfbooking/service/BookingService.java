@@ -65,7 +65,11 @@ public class BookingService {
         boolean isPaid = request.getTransactionId() != null && !request.getTransactionId().trim().isEmpty();
 
         long durationMinutes = java.time.temporal.ChronoUnit.MINUTES.between(slot.getStartTime(), slot.getEndTime());
-        java.math.BigDecimal calculatedPrice = turf.getPricePerHour()
+        if (durationMinutes < 0) durationMinutes += 24 * 60; // Handle overnight slots
+        
+        java.math.BigDecimal price = turf.getPricePerHour() != null ? turf.getPricePerHour() : java.math.BigDecimal.ZERO;
+
+        java.math.BigDecimal calculatedPrice = price
                 .multiply(java.math.BigDecimal.valueOf(durationMinutes))
                 .divide(java.math.BigDecimal.valueOf(60), 2, java.math.RoundingMode.HALF_UP);
 
