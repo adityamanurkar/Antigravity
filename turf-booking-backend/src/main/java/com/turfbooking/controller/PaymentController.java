@@ -36,14 +36,19 @@ public class PaymentController {
             @RequestBody Map<String, Object> data,
             @AuthenticationPrincipal UserDetailsImpl userDetails) {
         try {
-            Long bookingId = Long.parseLong(data.get("bookingId").toString());
+            Object bookingIdObj = data.get("bookingId");
+            if (bookingIdObj == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Booking ID is missing"));
+            }
+            Long bookingId = Long.parseLong(bookingIdObj.toString());
             Booking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
             if (!booking.getUser().getId().equals(userDetails.getId())) {
                 return ResponseEntity.status(403).build();
             }
-            if ("your_test_key_secret".equals(razorpayKeySecret) || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
+            if (razorpayKeySecret == null || razorpayKeySecret.trim().isEmpty() || "your_test_key_secret".equals(razorpayKeySecret) || 
+                razorpayKeyId == null || razorpayKeyId.trim().isEmpty() || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
                 // MOCK MODE
                 Map<String, Object> response = new HashMap<>();
                 response.put("orderId", "order_mock_" + booking.getId());
@@ -73,7 +78,10 @@ public class PaymentController {
 
         } catch (RazorpayException e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(500).body(Map.of("message", "Payment Gateway Error: " + e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body(Map.of("message", "Internal Server Error: " + e.getMessage()));
         }
     }
 
@@ -95,7 +103,8 @@ public class PaymentController {
         }
 
         try {
-            if ("your_test_key_secret".equals(razorpayKeySecret) || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
+            if (razorpayKeySecret == null || razorpayKeySecret.trim().isEmpty() || "your_test_key_secret".equals(razorpayKeySecret) || 
+                razorpayKeyId == null || razorpayKeyId.trim().isEmpty() || "rzp_test_YourTestKeyId".equals(razorpayKeyId)) {
                 booking.setPaymentStatus(PaymentStatus.PAID);
                 bookingRepository.save(booking);
 
@@ -125,11 +134,11 @@ public class PaymentController {
                 response.put("status", "success");
                 return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.status(400).body(Map.of("error", "Invalid signature"));
+                return ResponseEntity.status(400).body(Map.of("message", "Invalid signature"));
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
+            return ResponseEntity.status(500).body(Map.of("message", "Internal Server Error: " + e.getMessage()));
         }
     }
 }
