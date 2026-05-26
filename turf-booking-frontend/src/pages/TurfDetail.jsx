@@ -80,8 +80,7 @@ const TurfDetail = () => {
       const bookingRes = await api.post('/bookings', { 
         slotId,
         turfId: parseInt(id),
-        numberOfPlayers: 1,
-        transactionId: 'RAZORPAY_PENDING'
+        numberOfPlayers: 1
       });
       const booking = bookingRes.data;
 
